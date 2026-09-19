@@ -18,13 +18,13 @@
 
 ## Features
 
-- `⌘⇧A` captures an area, `⌘⇧W` the frontmost window, `⌘⇧E` the whole screen
+- Capture an area, the frontmost window, or the whole screen with configurable shortcuts
 - Every shot lands on the clipboard right away, with a preview card you can ignore
 - Arrows, numbered badges, rectangles and pixelated redaction
 - Backdrops with gradient presets for shots you want to share
 - A color inspector that copies the hex under the pointer
 - Save to a folder of your choice, or drag the shot straight out of the preview
-- A menu bar app with no dock icon, and shortcuts you can change
+- A menu bar app with no dock icon
 
 ## Built With
 
@@ -42,12 +42,6 @@ and drag Snimach into Applications.
 Launch Snimach and grant Screen Recording access when asked.
 
 Release downloads are signed with Developer ID and notarized by Apple.
-
-## Editor
-
-Enter or `⌘C` copies and closes. `⌘S` saves and copies. Esc discards.
-`A` picks the arrow, `N` the numbered badge, `R` a rectangle, `B` hides an area.
-`K` toggles the backdrop, `I` inspects colors. `⌘Z` and `⇧⌘Z` undo and redo.
 
 ## Run From Source
 
