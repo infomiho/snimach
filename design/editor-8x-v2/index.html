@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Snimach editor · Lit component prototype</title>
+<style>
+  :root {
+    --bg: #0c0c0d;
+    --panel: #151517;
+    --card: #1a1a1d;
+    --ink: #ececee;
+    --muted: #9a9aa0;
+    --line: #2e2e33;
+    --accent: #e8502a;
+    --mono: ui-monospace, SFMono-Regular, monospace;
+    --sans: system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  code { font-family: var(--mono); font-size: 12.5px; color: #b9b9c2; }
+
+  .shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
+  aside {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow: auto;
+    padding: 28px 20px; background: var(--panel); border-right: 1px solid var(--line);
+  }
+  aside h1 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 2px; }
+  aside .who { font-size: 13px; color: var(--ink); margin: 0 0 22px; }
+  aside h2 { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 22px 0 6px; }
+  aside a { display: block; padding: 6px 8px; margin-left: -8px; border-radius: 5px; color: var(--ink); text-decoration: none; font-size: 13.5px; }
+  aside a:hover { background: var(--card); }
+  aside a .n { color: var(--muted); display: inline-block; width: 20px; }
+
+  main { min-width: 0; padding: 48px 56px 120px; max-width: 1240px; }
+  .hero { max-width: 760px; margin-bottom: 56px; }
+  .crumb { color: var(--muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 34px; line-height: 1.15; margin: 10px 0 14px; letter-spacing: -.01em; }
+  .hero p { color: var(--muted); font-size: 16px; margin: 0 0 8px; }
+  .pills { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--panel); }
+  .pill kbd { font-family: var(--mono); font-size: 11px; color: var(--ink); }
+
+  section { margin-bottom: 84px; scroll-margin-top: 24px; }
+  .lede { color: var(--muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; margin: 0 0 6px; }
+  h2 { font-size: 26px; margin: 0 0 8px; letter-spacing: -.01em; }
+  .desc { color: var(--muted); max-width: 760px; margin: 0 0 28px; }
+
+  figure.layout { margin: 0 0 64px; }
+  figure.layout figcaption { max-width: 760px; margin-bottom: 18px; }
+  figure.layout h3 { font-size: 17px; margin: 0 0 4px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  figure.layout h3 .tag { font-family: var(--mono); font-size: 11.5px; color: var(--muted); font-weight: 400; }
+  figure.layout p { margin: 0; color: var(--muted); font-size: 14px; }
+  .notes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0 0; max-width: 900px; }
+  .notes ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13.5px; }
+  .notes li { margin-bottom: 4px; }
+  .notes .why { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 4px; padding: 12px 16px; font-size: 13.5px; background: var(--panel); }
+
+  .crow { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; padding: 22px 0; border-top: 1px solid var(--line); align-items: start; }
+  .crow:last-of-type { border-bottom: 1px solid var(--line); }
+  .crow-head code { display: block; margin-bottom: 6px; color: var(--ink); }
+  .crow-head p { margin: 0; color: var(--muted); font-size: 13px; }
+  .crow-stage { min-width: 0; overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .crow-stage.stack { flex-direction: column; align-items: stretch; gap: 18px; }
+  .crow-stage .row { flex-wrap: wrap; display: flex; gap: 10px; align-items: center; }
+  .crow-stage .cap { font-size: 12px; color: var(--muted); }
+  .pop-space { padding-top: 250px; }
+
+  .preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+  .tile { border-radius: 12px; padding: 26px; display: grid; gap: 12px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+  .tile-shot { width: 78%; box-shadow: 0 10px 26px rgba(0,0,0,.4); border-radius: 4px; }
+  .tile-name { font-size: 12px; color: #fff; background: rgba(0,0,0,.5); border-radius: 6px; padding: 2px 8px; justify-self: start; font-family: var(--mono); }
+
+  .rules { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; max-width: 900px; }
+  .rules h4 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .rules ul { margin: 0; padding-left: 18px; font-size: 14px; }
+  .rules li { margin-bottom: 8px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(8px);
+    background: rgba(20,20,22,.96); border: 1px solid #4a4a50; border-radius: 10px; padding: 9px 18px;
+    font-size: 13px; font-family: var(--mono); opacity: 0; pointer-events: none; transition: opacity 140ms, transform 140ms;
+  }
+  .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
+  .bang {
+    position: fixed; left: 50%; top: 16px; transform: translateX(-50%); z-index: 50;
+    background: #3a1210; border: 1px solid var(--accent); color: #ffd9d2;
+    border-radius: 8px; padding: 10px 16px; font: 13px/1.4 var(--mono); max-width: 80vw;
+  }
+
+  @media (max-width: 1100px) {
+    .shell { display: block; }
+    aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    main { padding: 28px 20px 80px; }
+    .crow { grid-template-columns: 1fr; }
+    .notes, .rules { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside>
+    <h1>SNIMACH-8X</h1>
+    <p class="who">Editor layout, as components</p>
+    <h2>Layouts</h2>
+    <a href="#l-default"><span class="n">1</span>Default</a>
+    <a href="#l-backdrop"><span class="n">2</span>Backdrop popover</a>
+    <a href="#l-picker"><span class="n">3</span>Colour tool</a>
+    <a href="#l-tight"><span class="n">4</span>Tight window</a>
+    <h2>Parts</h2>
+    <a href="#c-tools">Tools</a>
+    <a href="#c-bar">Accessory bar</a>
+    <a href="#c-backdrop">Backdrop</a>
+    <a href="#c-picker">Colour chip</a>
+    <a href="#c-chrome">Window chrome</a>
+    <h2>Reference</h2>
+    <a href="#presets">11 backdrops</a>
+    <a href="#rules">Rules and open calls</a>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <div class="crumb">Lit components · esm.sh · no build step</div>
+      <h1>One stage, one floating bar, contextual popovers</h1>
+      <p>The shot is the layout. Everything that edits it floats over it in one accessory bar. Backdrop is a single control that opens a preset grid. Colour inspection is a tool you switch on, not a permanent readout.</p>
+      <p>Click a tool, toggle a backdrop, pick a colour. Drawing and image output are previews.</p>
+      <div class="pills">
+        <span class="pill"><kbd>A</kbd> <kbd>N</kbd> <kbd>R</kbd> <kbd>B</kbd> tools</span>
+        <span class="pill"><kbd>K</kbd> backdrop</span>
+        <span class="pill"><kbd>I</kbd> colour tool</span>
+        <span class="pill"><kbd>Esc</kbd> exits a mode</span>
+      </div>
+    </header>
+
+    <section id="layouts">
+      <p class="lede">Composed layouts</p>
+      <h2>Four states of the same window</h2>
+      <p class="desc">Every layout below is the same components in the same positions. Only state changes. The stage box is fixed, so turning a backdrop on never resizes the window.</p>
+
+      <figure class="layout" id="l-default">
+        <figcaption>
+          <h3>1 · Default, no backdrop <span class="tag">&lt;sni-editor-window&gt;</span></h3>
+          <p>Output actions sit in the title bar because they act on the finished image. The bar floats over the shot and holds the four real annotation tools, history, backdrop, and colour.</p>
+        </figcaption>
+        <sni-editor-window tool="arrow" preset-id="sierra7" width="900" stage-height="574"></sni-editor-window>
+        <div class="notes">
+          <ul>
+            <li>Tools: Arrow, Number, Rectangle, Hide. The same four the app has today.</li>
+            <li>Undo and redo sit beside the tools, in their own group.</li>
+            <li>Nothing in the layout is a permanent preset strip.</li>
+          </ul>
+          <div class="why"><b>Why:</b> the shot is the work, so chrome floats over it instead of pushing it down. Fewer surfaces to read, one place to look.</div>
+        </div>
+      </figure>
+
+      <figure class="layout" id="l-backdrop">
+        <figcaption>
+          <h3>2 · Backdrop, popover open <span class="tag">sni-backdrop-button + sni-backdrop-popover</span></h3>
+          <p>One control you press. The main target toggles the backdrop, the chevron opens the presets. Picking a preset turns the backdrop on and closes the grid.</p>
+        </figcaption>
+        <sni-editor-window tool="rectangle" preset-id="sierra7" backdrop presets-open width="900" stage-height="574"></sni-editor-window>
+        <div class="notes">
+          <ul>
+            <li>The swatch shows the current look, or a dashed ring when off.</li>
+            <li>Presets are four columns, selected one ringed in the accent and named in the footer.</li>
+            <li>The stage stays the same size. The padding is the backdrop, so the window never jumps.</li>
+          </ul>
+          <div class="why"><b>Why:</b> a low-frequency choice gets progressive disclosure. Eleven swatches never occupy the canvas, and the control sits next to the thing it changes.</div>
+        </div>
+      </figure>
+
+      <figure class="layout" id="l-picker">
+        <figcaption>
+          <h3>3 · Colour tool active <span class="tag">sni-color-chip</span></h3>
+          <p>The picker is a tool, so the readout only exists while it is on. The chip is anchored above the bar: swatch, hex, and a copy target.</p>
+        </figcaption>
+        <sni-editor-window tool="arrow" preset-id="islandWaves" backdrop picker width="900" stage-height="574"></sni-editor-window>
+        <div class="notes">
+          <ul>
+            <li>Hover the shot and the hex tracks the pixel under the cursor.</li>
+            <li>Press <code>Tab</code> to copy the hex, or click the chip. <code>Esc</code> leaves the mode.</li>
+            <li>Off by default, so the bar carries no readout in normal use.</li>
+          </ul>
+          <div class="why"><b>Why:</b> the readout is useful in one mode and noise in every other. Making it a tool gives it a place to be legible and a way to get out.</div>
+        </div>
+      </figure>
+
+      <figure class="layout" id="l-tight">
+        <figcaption>
+          <h3>4 · Tight window <span class="tag">sni-accessory-bar overflow</span></h3>
+          <p>The same bar in a small window. Rectangle and Hide move behind the <code>···</code> menu, and the selected tool keeps its place in the row.</p>
+        </figcaption>
+        <sni-editor-window tool="rectangle" preset-id="gotham" backdrop overflow width="560" stage-height="357"></sni-editor-window>
+        <div class="notes">
+          <ul>
+            <li>Tool labels and keys survive in the menu, so shortcuts keep working.</li>
+            <li>The selected tool stays visible even when the row is tight, as AppKit does.</li>
+            <li>Nothing wraps to a second row.</li>
+          </ul>
+          <div class="why"><b>Why:</b> narrow windows are normal for a screenshot editor. The bar has to degrade without moving the layout.</div>
+        </div>
+      </figure>
+    </section>
+
+    <section id="components">
+      <p class="lede">Parts</p>
+      <h2>Components, one job each</h2>
+      <p class="desc">Each part is independent and composed into the layouts above. Selection is a pressed state, not a colour change. Accent marks the one thing that is on: the chosen backdrop, and focus.</p>
+
+      <div class="crow" id="c-tools">
+        <div class="crow-head">
+          <code>&lt;sni-tool-button&gt;</code>
+          <p>Default, selected, disabled. 34 by 30, 19px glyph, 7px radius. One meaning for pressed.</p>
+        </div>
+        <div class="crow-stage">
+          <div class="row">
+            <sni-tool-button icon="arrow" label="Arrow" hint="A"></sni-tool-button>
+            <sni-tool-button icon="number" label="Number" hint="N" selected></sni-tool-button>
+            <sni-tool-button icon="rect" label="Rectangle" hint="R"></sni-tool-button>
+            <sni-tool-button icon="redact" label="Hide" hint="B"></sni-tool-button>
+            <sni-tool-button icon="undo" label="Undo" disabled></sni-tool-button>
+            <span class="cap">hover a tool to see its shortcut</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="crow" id="c-bar">
+        <div class="crow-head">
+          <code>&lt;sni-accessory-bar&gt;</code>
+          <p>Three groups by job: tools, history, image. The groups share one glass surface, separated by subtle dividers.</p>
+        </div>
+        <div class="crow-stage stack">
+          <div class="row"><sni-accessory-bar tool="arrow" data-preset="sierra7"></sni-accessory-bar><span class="cap">idle</span></div>
+          <div class="row"><sni-accessory-bar tool="redact" data-preset="heather6" backdrop></sni-accessory-bar><span class="cap">backdrop on</span></div>
+          <div class="row"><sni-accessory-bar tool="rectangle" data-preset="gotham" overflow></sni-accessory-bar><span class="cap">tight, selected tool kept in the row</span></div>
+        </div>
+      </div>
+
+      <div class="crow" id="c-backdrop">
+        <div class="crow-head">
+          <code>&lt;sni-backdrop-button&gt;</code>
+          <p>Off, and on. Press the swatch to toggle, press the chevron for presets.</p>
+        </div>
+        <div class="crow-stage pop-space">
+          <div class="row">
+            <sni-backdrop-button data-preset="sierra7"></sni-backdrop-button>
+            <span class="cap">off</span>
+            <sni-backdrop-button data-preset="twilight10" on></sni-backdrop-button>
+            <span class="cap">on</span>
+          </div>
+          <div class="row" style="margin-top: 18px">
+            <sni-backdrop-button data-preset="wetlands9" on open></sni-backdrop-button>
+            <span class="cap">presets open, eleven looks, four columns</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="crow" id="c-picker">
+        <div class="crow-head">
+          <code>&lt;sni-color-chip&gt;</code>
+          <p>Swatch, hex in tabular figures, and a copy target. Only ever rendered while the colour tool is active.</p>
+        </div>
+        <div class="crow-stage">
+          <div class="row">
+            <sni-color-chip hex="#3A7BD5"></sni-color-chip>
+            <sni-color-chip hex="#E8502A" copied></sni-color-chip>
+            <span class="cap">idle, and after a copy</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="crow" id="c-chrome">
+        <div class="crow-head">
+          <code>&lt;sni-title-bar&gt;</code>
+          <p>Window identity and the three output actions. Nothing else belongs here.</p>
+        </div>
+        <div class="crow-stage">
+          <sni-title-bar style="width: 100%"></sni-title-bar>
+        </div>
+      </div>
+    </section>
+
+    <section id="presets">
+      <p class="lede">Reference</p>
+      <h2>The 11 shipped backdrops</h2>
+      <p class="desc">The same stops the renderer uses, drawn as the mat they would produce. Four are exact Hypercolor stops under MIT. Read from the renderer, not retyped.</p>
+      <div class="preset-grid" data-preset-grid></div>
+    </section>
+
+    <section id="rules">
+      <p class="lede">Decisions</p>
+      <h2>Rules this layout follows</h2>
+      <div class="rules">
+        <div>
+          <h4>Placement</h4>
+          <ul>
+            <li>The stage is the layout. Chrome floats over it, never beside it.</li>
+            <li>Output actions live in the title bar, because they finish the document rather than edit it.</li>
+            <li>Editing controls live in one bar, grouped by job.</li>
+            <li>Low-frequency choices hide behind a control and open in a popover.</li>
+            <li>A mode that changes the image (backdrop, colour) shows itself on the image.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Still open</h4>
+          <ul>
+            <li>Should the backdrop control also offer a plain "off" row in the grid, or is the toggle enough?</li>
+            <li>Does the colour chip need RGB beside the hex?</li>
+            <li>Should the bar auto-hide while drawing, or after a few idle seconds?</li>
+            <li>Does the tight window drop the backdrop label before dropping tools?</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<div class="bang" id="bang" hidden></div>
+
+<script>
+  (function () {
+    var banner = document.getElementById('bang')
+    function fail(message) {
+      banner.hidden = false
+      banner.textContent = 'Prototype failed to load: ' + message + '. Open this page over http (any static server), not file://.'
+      document.title = 'BROKEN · ' + document.title
+    }
+    window.addEventListener('error', function (event) {
+      if (event.target && event.target.tagName === 'SCRIPT') fail('script ' + event.target.src)
+      else if (event.message) fail(event.message)
+    }, true)
+    window.addEventListener('unhandledrejection', function (event) {
+      fail(String((event.reason && event.reason.message) || event.reason))
+    })
+    setTimeout(function () {
+      if (!customElements.get('sni-editor-window')) fail('components never upgraded')
+    }, 3000)
+  })()
+</script>
+
+<script type="module">
+  import { PRESETS, gradient, presetById } from './src/index.js'
+
+  document.querySelectorAll('[data-preset]').forEach((el) => {
+    el.preset = presetById(el.dataset.preset)
+  })
+
+  document.querySelector('[data-preset-grid]').innerHTML = PRESETS.map(
+    (preset) => `
+      <div class="tile" style="background-image:${gradient(preset)}">
+        <div class="tile-shot"><sni-shot mini></sni-shot></div>
+        <span class="tile-name">${preset.name}</span>
+      </div>`,
+  ).join('')
+
+  const toast = document.getElementById('toast')
+  let timer
+  const flash = (message) => {
+    toast.textContent = message
+    toast.classList.add('on')
+    clearTimeout(timer)
+    timer = setTimeout(() => toast.classList.remove('on'), 1600)
+  }
+
+  const OUTPUT_COPY = { save: 'Save preview', discard: 'Discard preview', copy: 'Copy preview' }
+  document.addEventListener('output', (event) => flash(OUTPUT_COPY[event.detail.action] ?? 'Done'))
+  document.addEventListener('copy-failed', () => flash('Could not copy. Check clipboard permissions.'))
+  document.addEventListener('copied', (event) => flash(`Copied ${event.detail.hex}`))
+</script>
+</body>
+</html>

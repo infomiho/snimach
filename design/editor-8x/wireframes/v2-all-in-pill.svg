@@ -1,0 +1,93 @@
+<!-- Snimach editor · variant 2 · everything in one bottom pill · 1280x800 desktop -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800"
+     font-family="-apple-system, system-ui, sans-serif" fill="#fff" stroke="#000" stroke-width="1.5">
+  <rect x="0" y="0" width="1280" height="800" rx="10" />
+
+  <!-- screenshot -->
+  <rect x="0" y="48" width="1280" height="752" fill="#e6e6e6" stroke="none" />
+  <g stroke="none" fill="#c9c9c9">
+    <rect x="160" y="160" width="440" height="16" rx="4" />
+    <rect x="160" y="196" width="300" height="16" rx="4" />
+    <rect x="160" y="232" width="380" height="16" rx="4" />
+    <rect x="680" y="160" width="380" height="16" rx="4" />
+    <rect x="680" y="196" width="300" height="16" rx="4" />
+    <rect x="680" y="232" width="360" height="16" rx="4" />
+  </g>
+
+  <!-- title bar: title only, no actions -->
+  <line x1="0" y1="48" x2="1280" y2="48" />
+  <g fill="#fff">
+    <circle cx="24" cy="24" r="6" />
+    <circle cx="48" cy="24" r="6" />
+    <circle cx="72" cy="24" r="6" />
+  </g>
+  <text x="96" y="29" font-size="14" stroke="none" fill="#000">Snimach</text>
+
+  <!-- 2 · secondary actions above the pill -->
+  <g>
+    <rect x="280" y="656" width="136" height="40" rx="8" />
+    <g fill="none">
+      <path d="M316 670c-6 0-10 4-10 10s4 10 10 10" />
+      <polyline points="316,666 310,670 316,674" fill="none" />
+      <path d="M356 670c6 0 10 4 10 10s-4 10-10 10" />
+      <polyline points="356,666 362,670 356,674" fill="none" />
+      <rect x="378" y="666" width="16" height="18" rx="2" />
+      <line x1="376" y1="666" x2="396" y2="666" />
+    </g>
+  </g>
+
+  <!-- 1 · one pill for tools, backdrop, and output -->
+  <rect x="280" y="712" width="720" height="56" rx="28" />
+  <g fill="none">
+    <path d="M312 728l10 18 3-8 8-3z" />
+    <path d="M368 730v10a8 8 0 0016 0v-8" />
+    <path d="M376 730v8M384 730v8M392 732v6" />
+    <path d="M420 752l14-14 4 4-14 14-6 2z" />
+    <path d="M468 752l14-14 4 4-14 14-6 2z" />
+    <rect x="482" y="728" width="10" height="10" rx="2" />
+    <path d="M516 752l20-20M536 732v12M536 732h-12" />
+    <path d="M564 730h16M572 730v20" />
+    <rect x="612" y="730" width="20" height="20" rx="3" />
+    <rect x="660" y="730" width="20" height="20" rx="3" />
+    <g fill="#000" stroke="none">
+      <rect x="664" y="734" width="5" height="5" />
+      <rect x="674" y="734" width="5" height="5" />
+      <rect x="669" y="741" width="5" height="5" />
+    </g>
+    <path d="M710 752l14-14 6 6-14 14-8 2z" />
+    <circle cx="724" cy="730" r="4" />
+  </g>
+  <line x1="748" y1="728" x2="748" y2="752" />
+
+  <!-- 3 · backdrop as one circle you press, in the same pill -->
+  <circle cx="784" cy="740" r="16" />
+  <line x1="773" y1="751" x2="795" y2="729" />
+  <line x1="820" y1="728" x2="820" y2="752" />
+
+  <!-- output actions -->
+  <g fill="none">
+    <rect x="836" y="732" width="10" height="12" rx="2" />
+    <rect x="842" y="736" width="10" height="12" rx="2" />
+    <rect x="876" y="730" width="14" height="14" rx="2" />
+    <circle cx="922" cy="740" r="12" />
+    <path d="M917 735l10 10M927 735l-10 10" />
+  </g>
+  <polyline points="954,738 964,728 974,738" fill="none" />
+
+  <!-- annotation layer -->
+  <g stroke="#d33" stroke-width="1.5" stroke-dasharray="4 4" fill="none">
+    <rect x="280" y="712" width="720" height="56" rx="28" />
+    <rect x="280" y="656" width="136" height="40" rx="8" />
+    <circle cx="784" cy="740" r="26" />
+  </g>
+  <g stroke="#d33" stroke-width="1.5" fill="#d33">
+    <circle cx="264" cy="740" r="12" fill="#fff" />
+    <circle cx="264" cy="676" r="12" fill="#fff" />
+    <circle cx="784" cy="692" r="12" fill="#fff" />
+  </g>
+  <g font-size="12" text-anchor="middle" stroke="none" fill="#d33">
+    <text x="264" y="744">1</text>
+    <text x="264" y="680">2</text>
+    <text x="784" y="696">3</text>
+  </g>
+</svg>

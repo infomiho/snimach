@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test
+
+  app:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: xcodegen generate --spec App/project.yml
+      - run: |
+          xcodebuild test \
+            -project App/Snimach.xcodeproj \
+            -scheme Snimach \
+            -destination 'platform=macOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM= \
+            | xcbeautify --renderer github-actions
+      - name: Package ad-hoc
+        run: ./scripts/package-app.sh
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo fmt --manifest-path web/Cargo.toml -- --check
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: web
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo build --locked --manifest-path web/Cargo.toml
+      - run: cargo clippy --all-targets --locked --manifest-path web/Cargo.toml -- -D warnings
+      - run: cargo test --locked --manifest-path web/Cargo.toml
+      - name: Assets stay in sync
+        run: |
+          cmp assets/snimach-mark.svg web/static/snimach-mark.svg
+          cmp assets/snimach.webp web/static/snimach.webp
+      - name: Docker smoke test
+        run: |
+          docker build -t snimach-web:ci web/
+          docker run -d --name snimach-web-ci -p 3000:3000 snimach-web:ci
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/healthz; then break; fi
+            sleep 1
+          done
+          curl -fsS http://localhost:3000/ >/dev/null
+          curl -fsS http://localhost:3000/releases >/dev/null
+          docker rm -f snimach-web-ci

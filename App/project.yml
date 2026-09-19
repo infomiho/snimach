@@ -1,0 +1,90 @@
+name: Snimach
+options:
+  bundleIdPrefix: dev.twoducks
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+packages:
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: 3.1.0
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.10.0
+  SnimachCore:
+    path: ..
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1000"
+    # Debug builds carry no feed, so the updater stays inert. scripts/package-app.sh
+    # sets the feed for signed Release builds and clears it for ad-hoc ones.
+    SPARKLE_FEED_URL: ""
+
+targets:
+  Snimach:
+    type: application
+    platform: macOS
+    sources:
+      - path: .
+        excludes:
+          - "Tests"
+          - "project.yml"
+          - "Info.plist"
+    info:
+      path: Info.plist
+      properties:
+        CFBundleName: Snimach
+        CFBundleDisplayName: Snimach
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
+        LSUIElement: true
+        CFBundleIconFile: Snimach
+        NSHumanReadableCopyright: "Copyright © 2026 Two Ducks"
+    entitlements:
+      path: Snimach.entitlements
+      properties: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.twoducks.snimach
+        ENABLE_HARDENED_RUNTIME: YES
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+    dependencies:
+      - package: KeyboardShortcuts
+        product: KeyboardShortcuts
+      - package: Sparkle
+        product: Sparkle
+      - package: SnimachCore
+        product: SnimachCore
+
+  SnimachTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: Snimach
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.twoducks.snimach.tests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Snimach.app/Contents/MacOS/Snimach"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+
+schemes:
+  Snimach:
+    build:
+      targets:
+        Snimach: all
+        SnimachTests: [test]
+    test:
+      targets:
+        - SnimachTests

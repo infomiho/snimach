@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Snimach OG card</title>
+    <style>
+      :root {
+        --background: #f7f5f1;
+        --hairline: #1a1a1a14;
+        --text-primary: #1a1a1a;
+        --text-dim: #5c5850;
+        --accent: #e8502a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: var(--background);
+        color: var(--text-primary);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+          "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .intro {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+        padding-top: 64px;
+      }
+
+      .mark {
+        width: 76px;
+        height: 76px;
+        border-radius: 17px;
+        filter: drop-shadow(0 10px 24px rgba(26, 26, 26, 0.18));
+      }
+
+      .title {
+        margin: 0;
+        font-size: 64px;
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        line-height: 1;
+      }
+
+      .tagline {
+        margin: 0;
+        font-size: 24px;
+        color: var(--text-dim);
+        letter-spacing: -0.01em;
+      }
+
+      .shot-frame {
+        position: relative;
+        width: 720px;
+        margin-top: 44px;
+        border: 1px solid var(--hairline);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 24px 60px rgba(26, 26, 26, 0.12);
+      }
+
+      .shot {
+        width: 720px;
+        height: auto;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="intro">
+      <img class="mark" src="../../assets/snimach-mark.svg" alt="">
+      <h1 class="title">Snimach</h1>
+      <p class="tagline">Menubar screenshots for macOS</p>
+    </div>
+    <div class="shot-frame">
+      <img class="shot" src="../../assets/snimach.webp" alt="Snimach's editor with an arrow annotation">
+    </div>
+  </body>
+</html>

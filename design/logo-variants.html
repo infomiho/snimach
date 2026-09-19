@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snimach logo variants</title>
+<style>
+:root {
+  --bg: #F2F0EC; --card: #FFFFFF; --line: #E3DFD8; --text: #1A1A1A; --muted: #706B63;
+  --accent: #E8502A; --radius: 16px; --pad: 22px;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --stage: #FFFFFF; --bar-bg: #F6F4F1; --bar-ink: #1A1A1A;
+}
+body[data-stage="dark"] { --stage: #1D1D1F; --bar-bg: #2B2B2E; --bar-ink: #F2F0EC; }
+body[data-stage="grey"] { --stage: #8C8C90; --bar-bg: #6E6E72; --bar-ink: #F2F0EC; }
+body[data-stage="photo"] { --stage: linear-gradient(160deg, #9BB7D4 0%, #C9D7E4 55%, #E6DED2 100%); }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
+header {
+  position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 16px;
+  align-items: baseline; justify-content: space-between; padding: 20px clamp(16px, 4vw, 40px);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px); border-block-end: 1px solid var(--line);
+}
+h1 { font-size: 17px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+h1 span { color: var(--muted); font-weight: 400; margin-inline-start: 10px; }
+h2 {
+  grid-column: 1 / -1; font-size: 12px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted); margin: 18px 0 0;
+}
+.toggle { display: flex; gap: 2px; background: var(--line); padding: 2px; border-radius: 9px; }
+.toggle button {
+  font: inherit; font-size: 12px; border: 0; background: transparent; color: var(--muted);
+  padding: 5px 12px; border-radius: 7px; cursor: pointer;
+}
+.toggle button[aria-pressed="true"] { background: var(--card); color: var(--text); }
+main {
+  display: grid; gap: 26px; padding: 26px clamp(16px, 4vw, 40px) 70px;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+}
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: var(--pad); display: flex; flex-direction: column; gap: 16px;
+}
+.head { display: flex; align-items: baseline; gap: 9px; }
+.num { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+.name { font-size: 14px; font-weight: 600; }
+.stage { background: var(--stage); border: 1px solid var(--line); border-radius: 12px; display: grid; place-items: center; padding: 26px; }
+.stage img { width: 152px; height: 152px; display: block; }
+.sizes { display: flex; align-items: flex-end; gap: 16px; }
+.sizes img { display: block; }
+.sizes figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.sizes figcaption { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.bar {
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  background: var(--bar-bg); color: var(--bar-ink); border: 1px solid var(--line);
+  border-radius: 8px; padding: 5px 10px;
+}
+.bar svg { width: 18px; height: 18px; display: block; }
+.bar .clock { font-size: 11px; opacity: 0.85; }
+.note { font-size: 12.5px; line-height: 1.45; color: var(--muted); margin: 0; }
+footer { padding: 0 clamp(16px, 4vw, 40px) 60px; color: var(--muted); font-size: 12.5px; max-width: 64ch; line-height: 1.5; }
+@media (max-width: 420px) { .stage img { width: 116px; height: 116px; } }
+</style>
+</head>
+<body data-stage="light">
+<header>
+  <h1>One shape, six pieces<span>the S drawn from the frame's own parts</span></h1>
+  <div class="toggle" role="group" aria-label="Preview background">
+    <button aria-pressed="true" data-v="light">Light</button>
+    <button aria-pressed="false" data-v="dark">Dark</button>
+    <button aria-pressed="false" data-v="grey">Grey</button>
+    <button aria-pressed="false" data-v="photo">Photo</button>
+  </div>
+</header>
+<main>
+  <section class="card">
+    <div class="head"><span class="num">01</span><span class="name">Brackets S</span></div>
+    <div class="stage"><img src="svg/frame-s-brackets.svg" alt="Brackets S"></div>
+    <div class="sizes"><figure><img src="svg/frame-s-brackets.svg" width="64" height="64" alt=""><figcaption>64</figcaption></figure><figure><img src="svg/frame-s-brackets.svg" width="32" height="32" alt=""><figcaption>32</figcaption></figure><figure><img src="svg/frame-s-brackets.svg" width="16" height="16" alt=""><figcaption>16</figcaption></figure></div>
+    <div class="bar"><svg viewBox="0 0 18 18"><path d="M 3.5 6.5 L 3.5 3.5 L 6.5 3.5 M 11.5 3.5 L 14.5 3.5 L 14.5 6.5 M 14.5 11.5 L 14.5 14.5 L 11.5 14.5 M 6.5 14.5 L 3.5 14.5 L 3.5 11.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M 11 7.1 L 7.2 7.1 L 7.2 9.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/><path d="M 7.2 11.9 L 11 11.9 L 11 9.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/></svg><span class="clock">Mon 14 Sep</span></div>
+    <p class="note">The S is two more corner brackets. Same shape, same weight, same arm. Six identical pieces make the whole icon.</p>
+  </section>
+  <section class="card">
+    <div class="head"><span class="num">02</span><span class="name">Brackets S wide</span></div>
+    <div class="stage"><img src="svg/frame-s-brackets-wide.svg" alt="Brackets S wide"></div>
+    <div class="sizes"><figure><img src="svg/frame-s-brackets-wide.svg" width="64" height="64" alt=""><figcaption>64</figcaption></figure><figure><img src="svg/frame-s-brackets-wide.svg" width="32" height="32" alt=""><figcaption>32</figcaption></figure><figure><img src="svg/frame-s-brackets-wide.svg" width="16" height="16" alt=""><figcaption>16</figcaption></figure></div>
+    <div class="bar"><svg viewBox="0 0 18 18"><path d="M 3.5 6.5 L 3.5 3.5 L 6.5 3.5 M 11.5 3.5 L 14.5 3.5 L 14.5 6.5 M 14.5 11.5 L 14.5 14.5 L 11.5 14.5 M 6.5 14.5 L 3.5 14.5 L 3.5 11.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M 11.3 7.4 L 6.9 7.4 L 6.9 9.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/><path d="M 6.9 11.6 L 11.3 11.6 L 11.3 9.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/></svg><span class="clock">Mon 14 Sep</span></div>
+    <p class="note">The same two brackets with longer bars and shorter returns, so the letter fills more of the frame.</p>
+  </section>
+  <section class="card">
+    <div class="head"><span class="num">03</span><span class="name">Brackets S turned</span></div>
+    <div class="stage"><img src="svg/frame-s-brackets-45.svg" alt="Brackets S turned"></div>
+    <div class="sizes"><figure><img src="svg/frame-s-brackets-45.svg" width="64" height="64" alt=""><figcaption>64</figcaption></figure><figure><img src="svg/frame-s-brackets-45.svg" width="32" height="32" alt=""><figcaption>32</figcaption></figure><figure><img src="svg/frame-s-brackets-45.svg" width="16" height="16" alt=""><figcaption>16</figcaption></figure></div>
+    <div class="bar"><svg viewBox="0 0 18 18"><path d="M 3.5 6.5 L 3.5 3.5 L 6.5 3.5 M 11.5 3.5 L 14.5 3.5 L 14.5 6.5 M 14.5 11.5 L 14.5 14.5 L 11.5 14.5 M 6.5 14.5 L 3.5 14.5 L 3.5 11.5" fill="none" stroke="currentColor" stroke-width="1.7"/><g transform="rotate(-45 9 9.5)"><path d="M 11 7.1 L 7.2 7.1 L 7.2 9.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/><path d="M 7.2 11.9 L 11 11.9 L 11 9.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/></g></svg><span class="clock">Mon 14 Sep</span></div>
+    <p class="note">The same two brackets rotated 45 degrees. Still the frame's parts, now reading as a shutter.</p>
+  </section>
+  <section class="card">
+    <div class="head"><span class="num">04</span><span class="name">Two diagonals</span></div>
+    <div class="stage"><img src="svg/frame-two-diagonals.svg" alt="Two diagonals"></div>
+    <div class="sizes"><figure><img src="svg/frame-two-diagonals.svg" width="64" height="64" alt=""><figcaption>64</figcaption></figure><figure><img src="svg/frame-two-diagonals.svg" width="32" height="32" alt=""><figcaption>32</figcaption></figure><figure><img src="svg/frame-two-diagonals.svg" width="16" height="16" alt=""><figcaption>16</figcaption></figure></div>
+    <div class="bar"><svg viewBox="0 0 18 18"><path d="M 3.5 6.5 L 3.5 3.5 L 6.5 3.5 M 11.5 3.5 L 14.5 3.5 L 14.5 6.5 M 14.5 11.5 L 14.5 14.5 L 11.5 14.5 M 6.5 14.5 L 3.5 14.5 L 3.5 11.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M 7.4 11.6 L 11.6 7.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/><path d="M 6.4 9.6 L 9.4 6.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/></svg><span class="clock">Mon 14 Sep</span></div>
+    <p class="note">No letter. Two parallel slashes, the most abstract thing that still feels deliberate.</p>
+  </section>
+  <section class="card">
+    <div class="head"><span class="num">05</span><span class="name">One diagonal</span></div>
+    <div class="stage"><img src="svg/frame-one-diagonal.svg" alt="One diagonal"></div>
+    <div class="sizes"><figure><img src="svg/frame-one-diagonal.svg" width="64" height="64" alt=""><figcaption>64</figcaption></figure><figure><img src="svg/frame-one-diagonal.svg" width="32" height="32" alt=""><figcaption>32</figcaption></figure><figure><img src="svg/frame-one-diagonal.svg" width="16" height="16" alt=""><figcaption>16</figcaption></figure></div>
+    <div class="bar"><svg viewBox="0 0 18 18"><path d="M 3.5 6.5 L 3.5 3.5 L 6.5 3.5 M 11.5 3.5 L 14.5 3.5 L 14.5 6.5 M 14.5 11.5 L 14.5 14.5 L 11.5 14.5 M 6.5 14.5 L 3.5 14.5 L 3.5 11.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M 6.6 12 L 12 6.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="miter"/></svg><span class="clock">Mon 14 Sep</span></div>
+    <p class="note">A single cut through the frame. Watch that it does not read as a prohibition sign.</p>
+  </section>
+  <section class="card">
+    <div class="head"><span class="num">06</span><span class="name">Spine</span></div>
+    <div class="stage"><img src="svg/frame-spine.svg" alt="Spine"></div>
+    <div class="sizes"><figure><img src="svg/frame-spine.svg" width="64" height="64" alt=""><figcaption>64</figcaption></figure><figure><img src="svg/frame-spine.svg" width="32" height="32" alt=""><figcaption>32</figcaption></figure><figure><img src="svg/frame-spine.svg" width="16" height="16" alt=""><figcaption>16</figcaption></figure></div>
+    <div class="bar"><svg viewBox="0 0 18 18"><path d="M 3.5 6.5 L 3.5 3.5 L 6.5 3.5 M 11.5 3.5 L 14.5 3.5 L 14.5 6.5 M 14.5 11.5 L 14.5 14.5 L 11.5 14.5 M 6.5 14.5 L 3.5 14.5 L 3.5 11.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M 11.6 7 L 7.4 7 L 10.6 12 L 6.4 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/></svg><span class="clock">Mon 14 Sep</span></div>
+    <p class="note">Bar, diagonal, bar. The most letter-like of the stylised set, though it leans toward a Z.</p>
+  </section>
+  <section class="card">
+    <div class="head"><span class="num">07</span><span class="name">Square S</span></div>
+    <div class="stage"><img src="svg/frame-s-square.svg" alt="Square S"></div>
+    <div class="sizes"><figure><img src="svg/frame-s-square.svg" width="64" height="64" alt=""><figcaption>64</figcaption></figure><figure><img src="svg/frame-s-square.svg" width="32" height="32" alt=""><figcaption>32</figcaption></figure><figure><img src="svg/frame-s-square.svg" width="16" height="16" alt=""><figcaption>16</figcaption></figure></div>
+    <div class="bar"><svg viewBox="0 0 18 18"><path d="M 3.5 6.5 L 3.5 3.5 L 6.5 3.5 M 11.5 3.5 L 14.5 3.5 L 14.5 6.5 M 14.5 11.5 L 14.5 14.5 L 11.5 14.5 M 6.5 14.5 L 3.5 14.5 L 3.5 11.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M 10.8 7.7 L 7.2 7.7 L 7.2 9.6 L 10.8 9.6 L 10.8 11.5 L 7.2 11.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="miter"/></svg><span class="clock">Mon 14 Sep</span></div>
+    <p class="note">Reference. Last round's pick, the full five stroke letter.</p>
+  </section>
+</main>
+<footer>
+  In the first three the icon contains exactly one shape, a right angle of fixed arm and weight,
+  repeated six times. Four of them make the frame and two make the letter, with the waist left open
+  for your eye to close. The middle group drops the letter entirely.
+</footer>
+<script>
+const buttons = document.querySelectorAll(".toggle button");
+buttons.forEach(b => b.addEventListener("click", () => {
+  buttons.forEach(o => o.setAttribute("aria-pressed", String(o === b)));
+  document.body.dataset.stage = b.dataset.v;
+}));
+</script>
+</body>
+</html>

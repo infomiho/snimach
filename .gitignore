@@ -1,0 +1,10 @@
+.build/
+build/
+dist/
+.cache/
+/web/target/
+DerivedData/
+App/Snimach.xcodeproj/
+.swiftpm/
+.playwright-mcp/
+.DS_Store
