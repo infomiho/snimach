@@ -23,8 +23,9 @@ tools="$(./scripts/fetch-sparkle.sh)/bin"
 public_key=$("$tools/generate_keys" -p)
 test -n "$public_key"
 
-exported=$(mktemp)
-trap 'rm -f "$exported"' EXIT
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+exported="$work/sparkle-private-key"
 "$tools/generate_keys" -x "$exported"
 gh secret set SPARKLE_PRIVATE_KEY --repo "$repo" <"$exported"
 if [ -n "$backup" ]; then
@@ -33,5 +34,6 @@ if [ -n "$backup" ]; then
   echo "Private key backed up to $backup."
 fi
 
-/usr/libexec/PlistBuddy -c "Set :SUPublicEDKey $public_key" "$plist"
+/usr/libexec/PlistBuddy -c "Delete :SUPublicEDKey" "$plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :SUPublicEDKey string $public_key" "$plist"
 echo "SPARKLE_PRIVATE_KEY stored on $repo and the public key written to $plist. Commit that change."
