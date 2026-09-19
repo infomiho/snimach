@@ -16,7 +16,7 @@ jobs:
     env:
       KEYCHAIN_PATH: ${{ github.workspace }}/release.keychain-db
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: brew install xcodegen
       - name: Verify version
         run: |

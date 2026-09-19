@@ -19,13 +19,13 @@ jobs:
   core:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: swift test
 
   app:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: brew install xcodegen
       - run: xcodegen generate --spec App/project.yml
       - run: |
@@ -43,7 +43,7 @@ jobs:
   web:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: cargo fmt --manifest-path web/Cargo.toml -- --check
       - uses: Swatinem/rust-cache@v2
         with:
