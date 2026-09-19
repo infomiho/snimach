@@ -15,7 +15,7 @@ Every release is the same four steps. `vX.Y.Z` must be plain `MAJOR.MINOR.PATCH`
 
 1. Bump `MARKETING_VERSION` in `App/project.yml`. That is Xcode's name for the user-facing version; `scripts/package-app.sh` derives the numeric `CFBundleVersion` from it.
 2. Commit and push to `main`, and wait for CI to be green.
-3. Tag with a message, it becomes the release notes: `git tag -a vX.Y.Z -m "..."`.
+3. Tag with a message, it becomes the release notes on GitHub, in the Sparkle update window and on `snimach.miho.dev/releases`. Format, same as cadence: first line `Snimach X.Y.Z`, blank line, then one bullet per user-visible change as `- **Short claim.** One or two sentences on what changed for the user.` No headings, no commit lists, no internal refactors. Write it in a file and tag with `git tag -a vX.Y.Z -F notes.md`.
 4. Push the tag: `git push origin vX.Y.Z`. Then check https://github.com/infomiho/snimach/actions.
 
 Pushing the tag triggers `.github/workflows/release.yml`, which builds `Snimach.app`, signs and notarizes a DMG, signs the appcast with the Sparkle key, creates the GitHub release with the DMG, its sha256 and `appcast.xml`, bumps `Casks/snimach.rb` in `infomiho/homebrew-tap`, and calls the Coolify webhook so `snimach.miho.dev` rebuilds. Do NOT create the GitHub release manually after pushing a tag; the workflow fails with "a release with the same tag name already exists". If the run fails, fix on `main`, then delete and recreate the tag (`git tag -d vX.Y.Z && git push origin :refs/tags/vX.Y.Z`, tag again, push).

@@ -18,6 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: brew install xcodegen
+      - name: Fetch the annotated tag
+        # actions/checkout turns the tag into a lightweight ref on the commit, which
+        # loses the message that becomes the release notes.
+        run: git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
       - name: Verify version
         run: |
           version=$(sed -n 's/^ *MARKETING_VERSION: "\(.*\)"/\1/p' App/project.yml)

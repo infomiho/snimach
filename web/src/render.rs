@@ -81,11 +81,11 @@ pub fn home(releases: &[Release], fingerprint: &Fingerprint) -> String {
 pub fn releases(releases: &[Release], fingerprint: &Fingerprint) -> String {
     layout(
         "/releases",
-        "Release notes · Snimach",
+        "Release Notes · Snimach",
         fingerprint,
         html! {
             header .page-head {
-                h1 { "Release notes" }
+                h1 { "Release Notes" }
                 p { "Every release of Snimach, newest first." }
             }
             @if releases.is_empty() {
