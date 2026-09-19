@@ -11,15 +11,23 @@ Menubar screenshot app for macOS 14+. Two hotkeys, one editor, clipboard first.
 
 ## Releases
 
-Pushing a `v*` tag triggers `.github/workflows/release.yml`, which builds `Snimach.app`, signs and notarizes a DMG, and runs `gh release create` for that tag. Do NOT create the GitHub release manually after pushing a tag; the workflow fails with "a release with the same tag name already exists".
+Every release is the same four steps. `vX.Y.Z` must be plain `MAJOR.MINOR.PATCH` (no suffixes) and match the version in `App/project.yml`, or the workflow refuses it.
 
-To cut a release: bump `MARKETING_VERSION` in `App/project.yml`, commit, tag `vX.Y.Z` with a message (it becomes the release notes), push the tag, and let CI publish. Versions must be plain `MAJOR.MINOR.PATCH`: `scripts/package-app.sh` derives the numeric `CFBundleVersion` from it and refuses suffixes.
+1. Bump `MARKETING_VERSION` in `App/project.yml`. That is Xcode's name for the user-facing version; `scripts/package-app.sh` derives the numeric `CFBundleVersion` from it.
+2. Commit and push to `main`, and wait for CI to be green.
+3. Tag with a message, it becomes the release notes: `git tag -a vX.Y.Z -m "..."`.
+4. Push the tag: `git push origin vX.Y.Z`. Then check https://github.com/infomiho/snimach/actions.
 
-`scripts/setup-release-signing.sh` stores the Developer ID certificate and the App Store Connect API key as repo secrets once. The workflow also calls the Coolify webhook (`COOLIFY_WEBHOOK`, `COOLIFY_TOKEN`) so the tag refreshes `snimach.miho.dev`.
+Pushing the tag triggers `.github/workflows/release.yml`, which builds `Snimach.app`, signs and notarizes a DMG, signs the appcast with the Sparkle key, creates the GitHub release with the DMG, its sha256 and `appcast.xml`, bumps `Casks/snimach.rb` in `infomiho/homebrew-tap`, and calls the Coolify webhook so `snimach.miho.dev` rebuilds. Do NOT create the GitHub release manually after pushing a tag; the workflow fails with "a release with the same tag name already exists". If the run fails, fix on `main`, then delete and recreate the tag (`git tag -d vX.Y.Z && git push origin :refs/tags/vX.Y.Z`, tag again, push).
 
-After publishing, the workflow runs `scripts/update-tap.sh`, which rewrites the version and sha256 of `Casks/snimach.rb` in `infomiho/homebrew-tap` (a local checkout lives at `~/dev/homebrew-tap`) so `brew install --cask infomiho/tap/snimach` serves the new build. It pushes over SSH with the `TAP_DEPLOY_KEY` secret, the private half of a write deploy key registered on the tap repo (`gh repo deploy-key add --allow-write`, then `gh secret set TAP_DEPLOY_KEY`).
+One-time setup, already done, rerun only on rotation:
 
-The workflow also signs the DMG with the Sparkle key from the `SPARKLE_PRIVATE_KEY` secret and publishes `appcast.xml` as a release asset. Installed copies read `https://github.com/infomiho/snimach/releases/latest/download/appcast.xml` and update themselves through Sparkle, linked as a Swift package (`App/Updater.swift`). `scripts/setup-sparkle-key.sh` stores the secret and writes the public key into `App/project.yml`, the source xcodegen regenerates `App/Info.plist` from on every generate, so edit plist keys there. Back the private key up: without it no installed copy accepts an update. Debug builds and ad-hoc packaging runs leave `SUFeedURL` empty, which keeps the updater inert and the Check for Updates item out of the menu.
+- `scripts/setup-release-signing.sh` stores the Developer ID certificate and the App Store Connect API key as repo secrets (`APPLE_*`).
+- `scripts/setup-sparkle-key.sh` stores `SPARKLE_PRIVATE_KEY` and writes the public key into `App/project.yml`. xcodegen regenerates `App/Info.plist` from `project.yml` on every generate, so plist keys are edited there, never in the plist. Back the private key up: without it no installed copy accepts an update.
+- `TAP_DEPLOY_KEY` is the private half of a write deploy key on the tap repo (`gh repo deploy-key add --allow-write`, then `gh secret set TAP_DEPLOY_KEY`). A local checkout of the tap lives at `~/dev/homebrew-tap`.
+- `COOLIFY_WEBHOOK` and `COOLIFY_TOKEN` point at the `snimach-web` app on Coolify.
+
+Installed copies read `https://github.com/infomiho/snimach/releases/latest/download/appcast.xml` and update themselves through Sparkle, linked as a Swift package (`App/Updater.swift`). Debug builds and ad-hoc packaging runs leave `SUFeedURL` empty, which keeps the updater inert and the Check for Updates item out of the menu.
 
 ## Web
 
