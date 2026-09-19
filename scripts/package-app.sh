@@ -58,8 +58,20 @@ xcodebuild build \
   CODE_SIGN_IDENTITY="$identity" \
   DEVELOPMENT_TEAM="$team" \
   ENABLE_HARDENED_RUNTIME=YES \
+  CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
   OTHER_CODE_SIGN_FLAGS="--timestamp"
 test -d "$app"
+
+# xcodebuild signs the app and the Sparkle framework bundle, but the code nested
+# inside the framework keeps Sparkle's own signature, which notarization rejects.
+# Snimach is not sandboxed, so Sparkle's XPC services never run and go away;
+# the rest is re-signed inside out, then the app seals over it.
+sparkle="$app/Contents/Frameworks/Sparkle.framework"
+rm -rf "$sparkle/Versions/B/XPCServices" "$sparkle/XPCServices"
+sign "$sparkle/Versions/B/Autoupdate"
+sign "$sparkle/Versions/B/Updater.app"
+sign "$sparkle"
+sign --entitlements App/Snimach.entitlements "$app"
 codesign --verify --deep --strict "$app"
 
 architecture=$(uname -m)
