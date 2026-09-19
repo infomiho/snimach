@@ -2,7 +2,7 @@ use maud::{DOCTYPE, Markup, PreEscaped, html};
 use pulldown_cmark::html as markdown_html;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag};
 
-use crate::assets::{Fingerprint, LOGO_PATH, OG_IMAGE_PATH, SCREENSHOT_PATH, STYLESHEET_PATH};
+use crate::assets::{CLOCK_SCRIPT_PATH, Fingerprint, LOGO_PATH, OG_IMAGE_PATH, STYLESHEET_PATH};
 use crate::github::{REPOSITORY_URL, Release, latest_with_download};
 use crate::viz;
 
@@ -41,9 +41,7 @@ pub fn home(releases: &[Release], fingerprint: &Fingerprint) -> String {
                     span { "Signed and notarized · macOS 14+" }
                 }
             }
-            figure .shot {
-                img src=(fingerprint.url(SCREENSHOT_PATH)) alt=(OG_IMAGE_ALT) width="1872" height="1296";
-            }
+            (viz::hero_demo())
             div .bento {
                 article .tile-wide {
                     (viz::capture())
@@ -146,6 +144,7 @@ fn layout(path: &str, title: &str, fingerprint: &Fingerprint, content: Markup) -
                 link rel="canonical" href=(page_url);
                 link rel="icon" type="image/svg+xml" href=(fingerprint.url(LOGO_PATH));
                 link rel="stylesheet" href=(fingerprint.url(STYLESHEET_PATH));
+                script defer src=(fingerprint.url(CLOCK_SCRIPT_PATH)) {}
                 meta name="theme-color" content="#f7f5f1";
                 meta property="og:type" content="website";
                 meta property="og:site_name" content="Snimach";

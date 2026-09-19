@@ -30,6 +30,32 @@ Body headings are demoted one level so they nest under the release title: one
 `h1`, release titles `h2`, body `h3` and deeper. Decorative images take empty
 `alt`.
 
+## The hero demo
+
+The hero is a CSS-only loop of one capture (`viz::hero_demo`, the `.demo*` rules at the
+end of `static/style.css`), not a screenshot. It replaced the editor image, which now
+only appears on the OG card. Three things constrain edits:
+
+- **Write easing curves out as literals inside `@keyframes`.** Chrome ignores `var()`
+  in a keyframe's `animation-timing-function` and silently falls back to linear, which
+  is how the whole loop once ran without anyone noticing.
+- **During the drag, only `transform` and `opacity` may change.** The dim is four
+  opaque panels under a mask carrying its alpha, the selection edge is four bars that
+  scale along their own length, and the corners ride the box in full-size wrappers.
+  Animating width, height or a spread shadow puts layout and a scene-sized repaint on
+  every frame, which is what this replaced.
+- **The rest state is the poster.** Static declarations carry it and the keyframes own
+  every animated property, so `prefers-reduced-motion` only has to switch the
+  animations off.
+
+The desktop is the macOS Sonoma wallpaper (`static/wallpaper-*.webp`, referenced from
+the stylesheet, so a new wallpaper needs a new filename rather than a fingerprint).
+Only chrome that can be drawn exactly is drawn: no approximated glyphs, no dock.
+
+The menu bar clock is the visitor's own. The server renders it in UTC as a fallback for
+readers without JavaScript, and `static/clock.js` replaces it on load and keeps it to
+the minute.
+
 ## Assets are derived
 
 The build context is `web/`, so everything the build needs lives here. Keep

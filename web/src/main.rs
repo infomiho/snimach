@@ -16,8 +16,9 @@ use axum::routing::get;
 use tokio::sync::RwLock;
 
 use crate::assets::{
-    Fingerprint, LOGO, LOGO_PATH, OG_IMAGE, OG_IMAGE_PATH, SCREENSHOT, SCREENSHOT_PATH,
-    STYLESHEET_PATH,
+    CLOCK_SCRIPT, CLOCK_SCRIPT_PATH, Fingerprint, LOGO, LOGO_PATH, OG_IMAGE, OG_IMAGE_PATH,
+    SCREENSHOT, SCREENSHOT_PATH, STYLESHEET_PATH, WALLPAPER_DARK, WALLPAPER_DARK_PATH,
+    WALLPAPER_LIGHT, WALLPAPER_LIGHT_PATH,
 };
 use crate::github::{Github, LATEST_RELEASE_URL, Release};
 
@@ -71,6 +72,9 @@ async fn main() {
         .route(LOGO_PATH, get(logo))
         .route(SCREENSHOT_PATH, get(screenshot))
         .route(OG_IMAGE_PATH, get(og_image))
+        .route(CLOCK_SCRIPT_PATH, get(clock_script))
+        .route(WALLPAPER_LIGHT_PATH, get(wallpaper_light))
+        .route(WALLPAPER_DARK_PATH, get(wallpaper_dark))
         .route("/healthz", get(healthz))
         .with_state(state)
         .layer(middleware::from_fn(security_headers));
@@ -176,6 +180,21 @@ async fn logo() -> Response {
 
 async fn screenshot() -> Response {
     asset(Bytes::from_static(SCREENSHOT), "image/webp")
+}
+
+async fn clock_script() -> Response {
+    asset(
+        Bytes::from_static(CLOCK_SCRIPT.as_bytes()),
+        "text/javascript; charset=utf-8",
+    )
+}
+
+async fn wallpaper_light() -> Response {
+    asset(Bytes::from_static(WALLPAPER_LIGHT), "image/webp")
+}
+
+async fn wallpaper_dark() -> Response {
+    asset(Bytes::from_static(WALLPAPER_DARK), "image/webp")
 }
 
 async fn og_image() -> Response {

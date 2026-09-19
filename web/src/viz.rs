@@ -4,6 +4,8 @@
 //! omits the closing tag for known HTML void elements, and an unclosed `<rect>`
 //! makes the HTML parser nest the rest of the drawing inside it.
 
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use maud::{Markup, html};
 
 const VIEW_WIDE: &str = "0 0 600 96";
@@ -227,5 +229,212 @@ pub fn inspect() -> Markup {
                 rect .copy-front x="256" y="34" width="7" height="7" rx="1.5" {}
             }
         }
+    }
+}
+
+/// The hero demo: one capture, start to clipboard, as a CSS loop over a fake Mac.
+///
+/// Every element here is static markup; the stylesheet's `@keyframes` own the motion,
+/// so removing them (reduced motion) leaves a composed poster. The card holds a copy
+/// of the desktop scaled to the selection, which is why the window markup appears
+/// twice: the thumbnail has to be the region the drag cut out, not an approximation.
+pub fn hero_demo() -> Markup {
+    html! {
+        figure .shot {
+            div .demo role="img"
+                aria-label="Pressing Command Shift A dims the screen, a rectangle is dragged over a window, and the shot lands on the clipboard with a small preview card." {
+
+                div .demo-wallpaper {}
+
+                div .demo-menubar {
+                    div .demo-menubar-side {
+                        svg .demo-apple viewBox="0 0 24 24" aria-hidden="true" {
+                            path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" {}
+                        }
+                        span .demo-menu-app { "Notes" }
+                        span .demo-menu-item { "File" }
+                        span .demo-menu-item { "Edit" }
+                        span .demo-menu-item { "View" }
+                        span .demo-menu-item { "Window" }
+                        span .demo-menu-item { "Help" }
+                    }
+                    div .demo-menubar-side .demo-menubar-status {
+                        svg .demo-mark viewBox="100 100 824 824" aria-hidden="true" {
+                            path d="M 267.38 421.88 L 267.38 267.38 L 421.88 267.38" {}
+                            path d="M 602.12 267.38 L 756.62 267.38 L 756.62 421.88" {}
+                            path d="M 756.62 602.12 L 756.62 756.62 L 602.12 756.62" {}
+                            path d="M 421.88 756.62 L 267.38 756.62 L 267.38 602.12" {}
+                            path d="M 402.56 402.56 L 621.44 621.44" {}
+                        }
+                        span .demo-clock { (server_clock(SystemTime::now())) }
+                    }
+                }
+
+                (window())
+
+                div .demo-card {
+                    div .demo-thumb {
+                        div .demo-screen {
+                            div .demo-wallpaper {}
+                            (window())
+                        }
+                    }
+                    div .demo-card-actions { i {} i {} i {} }
+                }
+
+                div .demo-dim {
+                    i .l {} i .t {} i .r {} i .b {}
+                }
+
+                div .demo-cutout {
+                    div .demo-edges {
+                        i .et {} i .el {} i .er {} i .eb {}
+                    }
+                    div .demo-brackets {
+                        span .bw .tl { svg viewBox="0 0 12 12" aria-hidden="true" { path d="M 1 9 L 1 1 L 9 1" {} } }
+                        span .bw .tr { svg viewBox="0 0 12 12" aria-hidden="true" { path d="M 3 1 L 11 1 L 11 9" {} } }
+                        span .bw .br { svg viewBox="0 0 12 12" aria-hidden="true" { path d="M 11 3 L 11 11 L 3 11" {} } }
+                        span .bw .bl { svg viewBox="0 0 12 12" aria-hidden="true" { path d="M 9 11 L 1 11 L 1 3" {} } }
+                    }
+                    span .demo-size {}
+                }
+
+                div .demo-pointer {
+                    div .demo-hand {
+                        div .demo-guides {
+                            i .demo-guide-h {}
+                            i .demo-guide-v {}
+                        }
+                        svg .demo-arrow viewBox="0 0 12 16" aria-hidden="true" {
+                            path d="M 1 1 L 1 13 L 4.3 10.3 L 6.6 15.2 L 8.8 14.2 L 6.6 9.6 L 11 9.6 Z" {}
+                        }
+                        svg .demo-crosshair viewBox="0 0 16 16" aria-hidden="true" {
+                            path .halo d="M 8 0 V 5.5 M 8 10.5 V 16 M 0 8 H 5.5 M 10.5 8 H 16" {}
+                            path d="M 8 0 V 5.5 M 8 10.5 V 16 M 0 8 H 5.5 M 10.5 8 H 16" {}
+                        }
+                    }
+                }
+
+                div .demo-narrator {
+                    div .demo-keycaps {
+                        kbd { "\u{2318}" }
+                        kbd { "\u{21e7}" }
+                        kbd { "A" }
+                    }
+                    div .demo-copied {
+                        svg viewBox="44 15 30 38" aria-hidden="true" {
+                            rect .board x="46" y="20" width="26" height="32" rx="4" {}
+                            rect .tab x="53" y="17" width="12" height="6" rx="2" {}
+                            path .check d="M 53 45 L 57 49 L 65 42" {}
+                        }
+                        span { "Copied" }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// The desktop's one window, drawn twice: once on the desktop and once inside the
+/// preview card, where it is scaled down to the region the selection cut out.
+fn window() -> Markup {
+    html! {
+        div .demo-window {
+            div .demo-lights { i .close {} i .minimise {} i .zoom {} }
+            div .demo-sidebar {
+                div .demo-sidebar-title { "Field notes" }
+                ul .demo-sidebar-list {
+                    li { "Overview" }
+                    li .is-selected { "Capture" }
+                    li { "Editor" }
+                    li { "Export" }
+                }
+            }
+            div .demo-pane {
+                div .demo-toolbar {}
+                article .demo-note {
+                    h2 { "A quieter workspace" }
+                    p .demo-note-meta { "Design notes / September 2026" }
+                    section { h3 { "Capture what matters" } p { "Simple controls, thoughtful spacing, room to work." } }
+                    section { h3 { "Keep the image in focus" } p { "Simple controls, thoughtful spacing, room to work." } }
+                    section { h3 { "Make every action clear" } p { "Simple controls, thoughtful spacing, room to work." } }
+                }
+            }
+        }
+    }
+}
+
+/// The menu bar clock as the server sees it, in UTC, formatted the way macOS does.
+/// `clock.js` replaces it with the visitor's own local time; this is the fallback a
+/// reader without JavaScript sees, and the pages re-render every half hour.
+fn server_clock(now: SystemTime) -> String {
+    const WEEKDAYS: [&str; 7] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const MONTHS: [&str; 12] = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+
+    let seconds = now
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_secs() as i64)
+        .unwrap_or(0);
+    let days = seconds.div_euclid(86_400);
+    let time_of_day = seconds.rem_euclid(86_400);
+
+    let (_, month, day) = civil_from_days(days);
+    // 1 January 1970 was a Thursday.
+    let weekday = (days + 4).rem_euclid(7) as usize;
+
+    format!(
+        "{} {} {}\u{2002}{:02}:{:02}",
+        WEEKDAYS[weekday],
+        day,
+        MONTHS[(month - 1) as usize],
+        time_of_day / 3600,
+        (time_of_day % 3600) / 60,
+    )
+}
+
+/// Days since the Unix epoch to a civil year, month and day. Howard Hinnant's
+/// algorithm, which is exact for the whole proleptic Gregorian calendar.
+fn civil_from_days(days: i64) -> (i64, u32, u32) {
+    let shifted = days + 719_468;
+    let era = shifted.div_euclid(146_097);
+    let day_of_era = shifted.rem_euclid(146_097);
+    let year_of_era =
+        (day_of_era - day_of_era / 1460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let year = year_of_era + era * 400;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let month_position = (5 * day_of_year + 2) / 153;
+    let day = (day_of_year - (153 * month_position + 2) / 5 + 1) as u32;
+    let month = if month_position < 10 {
+        month_position + 3
+    } else {
+        month_position - 9
+    } as u32;
+
+    (year + i64::from(month <= 2), month, day)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    fn at(seconds: u64) -> String {
+        server_clock(UNIX_EPOCH + Duration::from_secs(seconds))
+    }
+
+    #[test]
+    fn formats_the_clock_like_the_menu_bar() {
+        // 1 January 1970 was a Thursday.
+        assert_eq!(at(0), "Thu 1 Jan\u{2002}00:00");
+        // 19 September 2026, 09:41 UTC
+        assert_eq!(at(1_789_810_860), "Sat 19 Sep\u{2002}09:41");
+    }
+
+    #[test]
+    fn handles_leap_days() {
+        // 29 February 2024, 23:59 UTC
+        assert_eq!(at(1_709_251_140), "Thu 29 Feb\u{2002}23:59");
     }
 }
