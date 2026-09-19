@@ -231,7 +231,7 @@ final class EditorToolbarTests: XCTestCase {
         context.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 1, alpha: 1))
         context.fill(CGRect(x: 20, y: 0, width: 20, height: 30))
         let shot = Shot(image: try XCTUnwrap(context.makeImage()), scale: 1,
-            frame: CGRect(x: 0, y: 0, width: 40, height: 30), hasAlpha: false)
+            frame: CGRect(x: 0, y: 0, width: 40, height: 30))
         let controller = EditorWindowController(document: Document(shot: shot))
         defer { controller.close() }
         controller.selectPreset(.sierra7)
@@ -428,9 +428,8 @@ final class EditorToolbarTests: XCTestCase {
     }
 
     private func makeEditor(size: CGSize? = nil) -> EditorWindowController {
-        let base = makeTestShot()
-        let shot = size.map { Shot(image: base.image, scale: base.scale,
-                                   frame: CGRect(origin: CGPoint(x: 200, y: 200), size: $0), hasAlpha: false) } ?? base
+        let shot = size.map { makeTestShot(frame: CGRect(origin: CGPoint(x: 200, y: 200), size: $0)) }
+            ?? makeTestShot()
         return EditorWindowController(document: Document(shot: shot))
     }
 

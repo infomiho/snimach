@@ -28,7 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             output: output,
             makePreview: { shot in
                 PreviewWindowController(shot: shot, dragFile: {
-                    try output.temporaryPNG(shot.image, scale: shot.scale)
+                    try output.temporaryPNG(shot)
                 }, hideManually: preferences.previewHide == .manual)
             },
             makeEditor: { AppDelegate.editorWindowController(document: $0, preferences: preferences) },

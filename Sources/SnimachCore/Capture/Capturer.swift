@@ -72,12 +72,6 @@ public final class Capturer {
 
     private static let promptedKey = "dev.twoducks.snimach.permissionPrompted"
 
-    /// Permission snapshot, no prompt, no side effects. Enables the shell's Relaunch button.
-    public var permissionState: PermissionState {
-        if backend.preflightPermission() { return .granted }
-        return hasPrompted() ? .denied : .notDetermined
-    }
-
     public enum Kind: Sendable {
         case area
         case activeWindow(includeShadow: Bool = true)
@@ -139,8 +133,7 @@ public final class Capturer {
         return Shot(
             image: image,
             scale: display.scale,
-            frame: CaptureGeometry.appKitFrame(frameCG, mainDisplayHeight: mainHeight),
-            hasAlpha: false
+            frame: CaptureGeometry.appKitFrame(frameCG, mainDisplayHeight: mainHeight)
         )
     }
 
@@ -214,8 +207,7 @@ public final class Capturer {
         return Shot(
             image: image,
             scale: display.scale,
-            frame: CaptureGeometry.appKitFrame(display.frame, mainDisplayHeight: mainHeight),
-            hasAlpha: false
+            frame: CaptureGeometry.appKitFrame(display.frame, mainDisplayHeight: mainHeight)
         )
     }
 
@@ -269,8 +261,7 @@ public final class Capturer {
         return Shot(
             image: output,
             scale: display.scale,
-            frame: CaptureGeometry.appKitFrame(frameCG, mainDisplayHeight: mainHeight),
-            hasAlpha: includeShadow
+            frame: CaptureGeometry.appKitFrame(frameCG, mainDisplayHeight: mainHeight)
         )
     }
 

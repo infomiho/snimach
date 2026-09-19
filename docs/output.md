@@ -29,10 +29,11 @@ final class ShotOutput {
     static let defaultFolder: URL
 
     /// - Parameters:
-    ///   - folder: where `save` writes. Created on first save if missing, intermediates too.
+    ///   - folder: where `save` writes, read on every save because the user can change it
+    ///     while the app runs. Created on first save if missing, intermediates too.
     ///   - pasteboard: where `copy` writes. Tests pass `NSPasteboard(name:)`.
     ///   - now: clock for filenames. Tests pass a fixed date.
-    init(folder: URL = defaultFolder,
+    init(folder: @escaping () -> URL = { defaultFolder },
          pasteboard: NSPasteboard = .general,
          now: @escaping () -> Date = Date.init)
 
@@ -67,6 +68,13 @@ final class ShotOutput {
     ///   `.encodingFailed`.
     @discardableResult
     func save(_ image: CGImage, scale: CGFloat) throws -> URL
+
+    /// Writes the shot to a temporary PNG so it can be dragged out as a real file. The name
+    /// is what the receiving app shows, so it matches the save folder's naming.
+    func temporaryPNG(_ image: CGImage, scale: CGFloat) throws -> URL
+
+    /// The capture path's drag: a Shot carries its own scale, so callers never re-pair it.
+    func temporaryPNG(_ shot: Shot) throws -> URL
 }
 
 enum ShotOutputError: Error {
@@ -76,7 +84,9 @@ enum ShotOutputError: Error {
 }
 ```
 
-Nothing else is public. A `CGImage` carries no point size, so the scale is passed explicitly. The document module knows the shot's scale and hands it over.
+Nothing else is public. A `CGImage` carries no point size, so the scale is passed explicitly.
+Where the source is a captured `Shot`, the scale comes with it: the shell's `OutputService`
+protocol extension offers `copy(_ shot:)` and `save(_ shot:)` so the pairing is typed once.
 
 ## Usage
 

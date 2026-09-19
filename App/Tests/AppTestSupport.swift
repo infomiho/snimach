@@ -6,7 +6,6 @@ import XCTest
 
 @MainActor
 final class FakeCaptureService: CaptureService {
-    var permissionState: PermissionState = .granted
     var nextResult: Result<Shot, Error> = .failure(CancellationError())
     private(set) var captureCount = 0
 
@@ -22,15 +21,18 @@ final class FakeOutput: OutputService {
     var saveError: Error?
     private(set) var copyCount = 0
     private(set) var saveCount = 0
+    private(set) var lastDelivery: (image: CGImage, scale: CGFloat)?
 
     func copy(_ image: CGImage, scale: CGFloat) throws {
         copyCount += 1
+        lastDelivery = (image, scale)
         if let copyError { throw copyError }
     }
 
     @discardableResult
     func save(_ image: CGImage, scale: CGFloat) throws -> URL {
         saveCount += 1
+        lastDelivery = (image, scale)
         if let saveError { throw saveError }
         return URL(fileURLWithPath: "/tmp/snimach-test.png")
     }
@@ -140,11 +142,13 @@ final class Harness {
     }
 }
 
-func makeTestShot() -> Shot {
+func makeTestShot(frame: CGRect = CGRect(x: 0, y: 0, width: 20, height: 15), scale: CGFloat = 2) -> Shot {
+    let width = Int((frame.width * scale).rounded())
+    let height = Int((frame.height * scale).rounded())
     let context = CGContext(
         data: nil,
-        width: 40,
-        height: 30,
+        width: width,
+        height: height,
         bitsPerComponent: 8,
         bytesPerRow: 0,
         space: CGColorSpace(name: CGColorSpace.sRGB)!,
@@ -152,11 +156,10 @@ func makeTestShot() -> Shot {
             | CGBitmapInfo.byteOrder32Little.rawValue
     )!
     context.setFillColor(CGColor(srgbRed: 0.2, green: 0.2, blue: 0.2, alpha: 1))
-    context.fill(CGRect(x: 0, y: 0, width: 40, height: 30))
+    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
     return Shot(
         image: context.makeImage()!,
-        scale: 2,
-        frame: CGRect(x: 0, y: 0, width: 20, height: 15),
-        hasAlpha: false
+        scale: scale,
+        frame: frame
     )
 }

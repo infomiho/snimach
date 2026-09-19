@@ -4,7 +4,6 @@ import SnimachCore
 
 @MainActor
 protocol CaptureService: AnyObject {
-    var permissionState: PermissionState { get }
     func capture(_ kind: Capturer.Kind) async throws -> Shot
 }
 
@@ -17,6 +16,15 @@ protocol OutputService: AnyObject {
 }
 
 extension ShotOutput: OutputService {}
+
+extension OutputService {
+    /// Delivery for the capture path. A Shot's pixels come with their own scale, so callers
+    /// never re-pair them.
+    func copy(_ shot: Shot) throws { try copy(shot.image, scale: shot.scale) }
+
+    @discardableResult
+    func save(_ shot: Shot) throws -> URL { try save(shot.image, scale: shot.scale) }
+}
 
 @MainActor
 protocol CoordinatorPresenter: AnyObject {
@@ -110,7 +118,7 @@ final class Coordinator {
     private func deliver(_ shot: Shot) {
         // The plain shot is on the pasteboard before anything appears on screen.
         // Failure is not actionable, the preview card is the feedback.
-        try? output.copy(shot.image, scale: shot.scale)
+        try? output.copy(shot)
         switch afterCapture() {
         case .clipboardOnly: break
         case .editor: openEditor(shot)
@@ -134,8 +142,8 @@ final class Coordinator {
 
     private func savePlainShot(_ shot: Shot) {
         do {
-            let url = try output.save(shot.image, scale: shot.scale)
-            try output.copy(shot.image, scale: shot.scale)
+            let url = try output.save(shot)
+            try output.copy(shot)
             presenter.showSaved(url, near: shot.frame)
         } catch {
             presenter.showError(error)

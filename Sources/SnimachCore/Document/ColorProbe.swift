@@ -11,12 +11,10 @@ public enum ColorProbe {
     }
 
     /// sRGB bytes of the shot pixel under `point`. Document points are y-up from the
-    /// bottom left, image pixels y-down from the top left.
+    /// bottom left; `Shot.pixel(for:)` owns the flip to the y-down bitmap.
     public static func rgb(at point: CGPoint, in shot: Shot) -> (r: UInt8, g: UInt8, b: UInt8, a: UInt8)? {
-        let scale = shot.scale
-        guard scale > 0, shot.image.width > 0, shot.image.height > 0 else { return nil }
-        let x = Int((point.x * scale).rounded())
-        let y = Int(((shot.frame.size.height - point.y) * scale).rounded())
+        guard shot.image.width > 0, shot.image.height > 0 else { return nil }
+        let (x, y) = shot.pixel(for: point)
         let clampedX = min(max(x, 0), shot.image.width - 1)
         let clampedY = min(max(y, 0), shot.image.height - 1)
         guard let crop = shot.image.cropping(to: CGRect(x: clampedX, y: clampedY, width: 1, height: 1)) else {

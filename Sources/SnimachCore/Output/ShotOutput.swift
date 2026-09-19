@@ -111,6 +111,11 @@ public final class ShotOutput {
         return url
     }
 
+    /// The capture path's drag. A Shot carries its own scale.
+    public func temporaryPNG(_ shot: Shot) throws -> URL {
+        try temporaryPNG(shot.image, scale: shot.scale)
+    }
+
     private func encodePNG(_ image: CGImage, scale: CGFloat) throws -> Data {
         if let data = cachedPNG, cachedImage === image, cachedScale == scale {
             return data

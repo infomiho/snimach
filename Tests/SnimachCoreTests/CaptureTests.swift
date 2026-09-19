@@ -55,7 +55,6 @@ final class CaptureTests: XCTestCase {
         XCTAssertEqual(shot.image.width, 400)
         XCTAssertEqual(shot.image.height, 300)
         XCTAssertEqual(shot.frame, CGRect(x: 100, y: 550, width: 200, height: 150))
-        XCTAssertFalse(shot.hasAlpha)
 
         XCTAssertEqual(backend.captureCalls.count, 1, "the whole display is captured once, before the drag")
         let call = backend.captureCalls[0]
@@ -111,18 +110,10 @@ final class CaptureTests: XCTestCase {
                        "a crop that shares the display bitmap keeps the display's row stride")
     }
 
-    func testSelectionClampsToDisplayWhereDragStarted() async throws {
-        let crossed = CGRect(x: 900, y: 100, width: 400, height: 200)
-        let clamped = CaptureGeometry.clampSelection(
-            crossed,
-            startedAt: CGPoint(x: 950, y: 150),
-            in: [display2x, display1x]
-        )
-        XCTAssertEqual(clamped, CGRect(x: 900, y: 100, width: 100, height: 200))
-
+    func testSelectionTouchingTheDisplayEdgeCropsOnThatDisplay() async throws {
         let backend = FakeCaptureBackend()
         backend.displaysList = [display2x, display1x]
-        let selector = ScriptedAreaSelector([.rect(try XCTUnwrap(clamped))])
+        let selector = ScriptedAreaSelector([.rect(CGRect(x: 900, y: 100, width: 100, height: 200))])
         let capturer = makeCapturer(backend: backend, selector: selector)
 
         let shot = try await capturer.capture(.area)
@@ -288,7 +279,6 @@ final class CaptureTests: XCTestCase {
         XCTAssertEqual(shot.image.width, 800)
         XCTAssertEqual(shot.image.height, 600)
         XCTAssertEqual(shot.frame, CGRect(x: 1000, y: 200, width: 800, height: 600))
-        XCTAssertFalse(shot.hasAlpha)
 
         XCTAssertEqual(backend.captureCalls.count, 1, "no overlay, no second pass")
         let call = backend.captureCalls[0]
@@ -336,7 +326,6 @@ final class CaptureTests: XCTestCase {
 
         let shot = try await capturer.capture(.activeWindow(includeShadow: true))
 
-        XCTAssertTrue(shot.hasAlpha)
         XCTAssertEqual(shot.frame.size.width, 200)
         XCTAssertEqual(shot.frame.size.height, 100)
         XCTAssertEqual(shot.frame.origin, CGPoint(x: 100, y: 600))
@@ -361,7 +350,6 @@ final class CaptureTests: XCTestCase {
 
         let shot = try await capturer.capture(.activeWindow(includeShadow: false))
 
-        XCTAssertFalse(shot.hasAlpha)
         XCTAssertEqual(backend.captureCalls[0].keepShadows, false)
         XCTAssertEqual(shot.image.width, 400)
         XCTAssertEqual(shot.image.height, 200)
@@ -433,21 +421,6 @@ final class CaptureTests: XCTestCase {
         }
         XCTAssertTrue(didPrompt)
         XCTAssertEqual(backend.promptCount, 1)
-    }
-
-    func testPermissionStateReadsPreflightAndFlag() {
-        let backend = FakeCaptureBackend()
-        let selector = ScriptedAreaSelector([])
-
-        backend.preflight = true
-        XCTAssertEqual(makeCapturer(backend: backend, selector: selector).permissionState, .granted)
-
-        backend.preflight = false
-        XCTAssertEqual(
-            makeCapturer(backend: backend, selector: selector, prompted: true).permissionState,
-            .denied
-        )
-        XCTAssertEqual(makeCapturer(backend: backend, selector: selector).permissionState, .notDetermined)
     }
 
     func testEmptyDisplayListIsAPermissionFailure() async throws {

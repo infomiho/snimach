@@ -19,8 +19,7 @@ guard let base = makeBaseImage(pointSize: pointSize, scale: scale) else {
 let shot = Shot(
     image: base,
     scale: scale,
-    frame: CGRect(origin: .zero, size: pointSize),
-    hasAlpha: false
+    frame: CGRect(origin: .zero, size: pointSize)
 )
 
 var document = Document(shot: shot)

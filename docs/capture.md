@@ -8,16 +8,17 @@ Screen Recording permission flow, the AppKit selection overlay and all screen ge
 ```swift
 /// A captured bitmap plus the geometry needed to show it 1:1 on the right screen.
 public struct Shot: Sendable {
-    /// sRGB premultiplied BGRA. Invariant: pixel size == (frame.size * scale).rounded().
+    /// sRGB premultiplied BGRA. Invariant, checked in debug builds:
+    /// pixel size == (frame.size * scale).rounded(). The point-to-pixel flips live here:
+    /// `pixel(for:)` samples a document point, `pixelRect(for:)` maps a document rect.
     public let image: CGImage
     /// Backing scale of the display the shot was taken on (1.0 or 2.0). A shot lives on one
     /// display, so this equals the editor panel's backingScaleFactor at `frame`.
     public let scale: CGFloat
     /// Screen location in AppKit global points (y-up, origin at the main display's
     /// bottom-left), the space of NSScreen.frame, so the editor opens exactly here.
+    /// Its size is the document's point grid.
     public let frame: CGRect
-    /// True only for window shots that include the shadow (transparent margin).
-    public let hasAlpha: Bool
 }
 
 public enum PermissionState: Sendable, Equatable {
@@ -48,9 +49,6 @@ public final class Capturer {
     /// Deep link to System Settings > Privacy & Security > Screen & System Audio Recording.
     public static let settingsURL: URL   // x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture
 
-    /// Permission snapshot, no prompt, no side effects. Enables the shell's Relaunch button.
-    public var permissionState: PermissionState { get }
-
     public enum Kind: Sendable { case area, activeWindow(includeShadow: Bool = true), fullScreen }
 
     /// .area: every display is captured first (the screen freezes), then a dimmed crosshair
@@ -64,7 +62,7 @@ public final class Capturer {
     /// .fullScreen: the whole display under the pointer, no UI, no overlay, one capture.
     /// .activeWindow: frontmost normal-level window that is not ours, as it is right now. No
     /// UI, no activation, 100 to 250 ms. includeShadow adds a transparent margin with the
-    /// system shadow (hasAlpha). Attached sheets and popovers are included. A window
+    /// system shadow. Attached sheets and popovers are included. A window
     /// straddling displays is captured on the one holding most of it.
     /// Neither kind includes the cursor or our own windows.
     public func capture(_ kind: Kind) async throws -> Shot
@@ -93,7 +91,7 @@ live grant works unchanged and a revocation while running is caught despite a st
     }
 }
 // PermissionAlert: .notDetermined stays silent (the system prompt is the UI). .denied -> button
-// opening Capturer.settingsURL, polling permissionState. .grantedNeedsRelaunch -> Relaunch.
+// opening Capturer.settingsURL. .grantedNeedsRelaunch -> Relaunch.
 ```
 
 ## 3. What the implementation hides
@@ -152,7 +150,7 @@ cannot report for `desktopIndependentWindow` filters.
 **Permission.** On `SCStreamError.Code.userDeclined` (-3801) or an empty display list:
 preflight true throws `.grantedNeedsRelaunch`, a `UserDefaults` "prompted" flag throws
 `.denied`, otherwise `CGRequestScreenCaptureAccess()` (system dialog once, returns at once),
-set the flag, throw `.notDetermined`. `permissionState` uses the preflight plus the flag.
+set the flag, throw `.notDetermined`.
 
 **Cancellation.** The drag is a `CheckedContinuation` inside `withTaskCancellationHandler`.
 Every cancel cause runs one teardown: release overlay windows, restore the previous app,
@@ -232,11 +230,10 @@ throws, or suspends, and records what it was shown.
 and save path do zero geometry), in the freeze (hover states survive, the overlay previews the
 exact shot, mouse-up is instant), in the single window path (shadow or not, sheets included)
 and in the permission mapping that folds three CG and SCK signals into one enum. The
-geometry rules (space flip, clamp, pixel crop, shadow margin, alpha trim) are pure functions
-in one file.
+geometry rules (space flip, clamp, pixel crop, shadow margin, alpha trim) are pure
+functions on `CaptureGeometry` and `Shot`.
 
-**Leverage is thin** in `permissionState`, a one-line wrapper kept so the shell can enable its
-Relaunch button, and in the port's `captureRegion`, which lets SCK's shape (window allow-list,
+**Leverage is thin** in the port's `captureRegion`, which lets SCK's shape (window allow-list,
 shadow flag) through because it is one method and the fake stays trivial. Clamping to one
 display rules out cross-display shots in exchange for a Shot that is always pixel-exact 1:1.
 Lifting the clamp means per-display tiles composited at max scale, with no interface change.

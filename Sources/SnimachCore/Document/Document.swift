@@ -345,14 +345,7 @@ public struct Document {
     }
 
     private func redactionCells(for rect: CGRect) -> CGImage? {
-        let scale = shot.scale
-        // Document points are y-up from the bottom left, image pixels y-down from the top left.
-        let source = CGRect(
-            x: rect.minX * scale,
-            y: (pointSize.height - rect.maxY) * scale,
-            width: rect.width * scale,
-            height: rect.height * scale
-        ).integral
+        let source = shot.pixelRect(for: rect)
         guard source.width >= 1, source.height >= 1,
               let crop = shot.image.cropping(to: source) else {
             return nil

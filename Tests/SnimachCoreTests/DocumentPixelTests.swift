@@ -137,4 +137,39 @@ final class DocumentPixelTests: XCTestCase {
         let shot = makeShot(pointSize: CGSize(width: 4, height: 4), scale: 2, color: color)
         XCTAssertEqual(ColorProbe.hex(at: CGPoint(x: 1, y: 1), in: shot), "#3B7AD6")
     }
+
+    func testColorProbeSamplesTheNearestPixelCenter() {
+        let shot = makeCheckerShot(pointSize: CGSize(width: 4, height: 4), scale: 1)
+        // x 0.6 lies inside column 0, but column 1's center is nearer.
+        XCTAssertEqual(ColorProbe.hex(at: CGPoint(x: 0.6, y: 0.7), in: shot), "#FFFFFF")
+        // x 1.6 likewise falls on column 2's center.
+        XCTAssertEqual(ColorProbe.hex(at: CGPoint(x: 1.6, y: 0.7), in: shot), "#000000")
+    }
+
+    func testRedactionCoversEveryPixelTheRectTouches() {
+        // All white except a black band at document x 6...7, which the drag only grazes.
+        let context = makeContext(width: 8, height: 8)
+        context.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: 8, height: 8))
+        context.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1))
+        context.fill(CGRect(x: 6, y: 0, width: 1, height: 8))
+        let shot = Shot(
+            image: context.makeImage()!,
+            scale: 1,
+            frame: CGRect(origin: .zero, size: CGSize(width: 8, height: 8))
+        )
+
+        var document = Document(shot: shot)
+        document.apply(.toolSelected(.redact))
+        document.apply(.pointerDown(CGPoint(x: 1.4, y: 1.4)))
+        document.apply(.pointerUp(CGPoint(x: 6.6, y: 6.6)))
+
+        let rendered = draw(document)
+        let centre = rendered.pixel(at: CGPoint(x: 4, y: 4))
+        XCTAssertLessThan(Int(centre.r), 250,
+                          "the grazed black column must reach into the redacted sample")
+        XCTAssertGreaterThan(Int(centre.r), 0)
+        assertNear(rendered.pixel(at: CGPoint(x: 0.2, y: 4)),
+                   CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
+    }
 }

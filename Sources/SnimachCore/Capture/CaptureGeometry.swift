@@ -19,14 +19,6 @@ enum CaptureGeometry {
         }
     }
 
-    static func clampSelection(_ rect: CGRect, startedAt start: CGPoint,
-                               in displays: [DisplayInfo]) -> CGRect? {
-        guard let display = displayContaining(start, in: displays) else { return nil }
-        let clamped = rect.intersection(display.frame)
-        guard clamped.width > 0, clamped.height > 0 else { return nil }
-        return clamped
-    }
-
     static func expanded(_ rect: CGRect, by margin: CGFloat, clampedTo bounds: CGRect) -> CGRect {
         rect.insetBy(dx: -margin, dy: -margin).intersection(bounds)
     }

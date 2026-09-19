@@ -108,8 +108,7 @@ func makeShot(pointSize: CGSize, scale: CGFloat, color: CGColor = CGColor(srgbRe
     return Shot(
         image: context.makeImage()!,
         scale: scale,
-        frame: CGRect(origin: .zero, size: pointSize),
-        hasAlpha: false
+        frame: CGRect(origin: .zero, size: pointSize)
     )
 }
 
@@ -134,8 +133,7 @@ func makeCheckerShot(pointSize: CGSize, scale: CGFloat) -> Shot {
     return Shot(
         image: context.makeImage()!,
         scale: scale,
-        frame: CGRect(origin: .zero, size: pointSize),
-        hasAlpha: false
+        frame: CGRect(origin: .zero, size: pointSize)
     )
 }
 

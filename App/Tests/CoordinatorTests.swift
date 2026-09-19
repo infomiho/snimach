@@ -21,6 +21,18 @@ final class CoordinatorTests: XCTestCase {
         XCTAssertFalse(harness.coordinator.isCapturing)
     }
 
+    func testCapturedShotIsDeliveredWithItsOwnScale() async throws {
+        let harness = Harness()
+        let shot = makeTestShot()
+        harness.capture.nextResult = .success(shot)
+
+        await harness.runCapture()
+
+        let delivery = try XCTUnwrap(harness.output.lastDelivery)
+        XCTAssertTrue(delivery.image === shot.image)
+        XCTAssertEqual(delivery.scale, 2, "a Retina shot must not reach the pasteboard at half DPI")
+    }
+
     func testPreviewEditOpensEditorOnSameShot() async throws {
         let harness = Harness()
         harness.capture.nextResult = .success(makeTestShot())

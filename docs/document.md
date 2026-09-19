@@ -52,8 +52,9 @@ struct Document {
     init(shot: Shot)
 
     /// Defined by the Capture module: `image: CGImage`, `scale: CGFloat`,
-    /// `frame: CGRect` (AppKit global points), `hasAlpha: Bool`.
-    /// Invariant: `image.width == frame.width * scale` and `image.height == frame.height * scale`.
+    /// `frame: CGRect` (AppKit global points).
+    /// Invariant, checked in debug builds: pixel size == (frame.size × scale).rounded(),
+    /// with the document's point-to-pixel flip on `Shot.pixel(for:)` and `Shot.pixelRect(for:)`.
     let shot: Shot
     /// Size of the document in points. Equal to `shot.frame.size`.
     var pointSize: CGSize { get }

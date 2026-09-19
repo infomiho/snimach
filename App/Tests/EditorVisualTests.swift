@@ -97,7 +97,7 @@ private enum EditorFixture {
         text("All changes saved", at: CGPoint(x: 226, y: 16), size: 12)
         text("900 × 560", at: CGPoint(x: 810, y: 16), size: 12)
         let image = try XCTUnwrap(context.makeImage())
-        let shot = Shot(image: image, scale: 2, frame: CGRect(x: 100, y: 100, width: 900, height: 560), hasAlpha: false)
+        let shot = Shot(image: image, scale: 2, frame: CGRect(x: 100, y: 100, width: 900, height: 560))
         var document = Document(shot: shot)
         document.apply(.backdropPresetSelected(BackdropPreset.preset(.sierra7)))
         document.apply(.pointerDown(CGPoint(x: 720, y: 255)))
