@@ -214,28 +214,6 @@ a {
   box-shadow: 0 24px 60px var(--shadow-shot);
 }
 
-.keys {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-  margin-block-start: auto;
-  padding: 0;
-  list-style: none;
-}
-
-.keys li {
-  padding-block: 4px;
-  padding-inline: 9px;
-  border: 1px solid var(--hairline-strong);
-  border-block-end-width: 2px;
-  border-radius: 7px;
-  background: var(--surface-raised);
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  color: var(--text-primary);
-}
-
 .bento {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -557,5 +535,499 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .button {
     transition: none;
+  }
+}
+
+/* ---- Illustrations. Rest states: every one reads with no motion at all. ---- */
+
+.viz {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-block-end: 12px;
+  overflow: visible;
+}
+
+.viz .line {
+  fill: var(--text-faint);
+  opacity: 0.35;
+}
+
+.viz .shot,
+.viz .screen {
+  fill: var(--surface-raised);
+}
+
+.viz-clipboard .screen,
+.viz-annotate .shot,
+.viz-backdrop .shot,
+.viz-inspect .shot {
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
+}
+
+/* Capture: three dimmed screens, the captured region lights up on hover. */
+.viz-capture .dim {
+  fill: var(--shadow-logo);
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
+}
+
+.viz-capture .cutout {
+  fill: var(--surface-raised);
+  opacity: 0;
+}
+
+.viz-capture .target {
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-width: 1;
+}
+
+.viz-capture .titlebar {
+  stroke: var(--text-faint);
+  stroke-width: 1;
+}
+
+.viz-capture .dot {
+  fill: var(--text-faint);
+}
+
+.viz-capture .window-shadow {
+  fill: var(--shadow-logo);
+}
+
+.viz-capture .brackets {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1.15);
+}
+
+.viz-capture .brackets path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: miter;
+}
+
+.viz-capture .label {
+  fill: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  text-anchor: middle;
+  opacity: 0;
+}
+
+/* Clipboard: the glyph already holds the shot, the preview card arrives second. */
+.viz-clipboard .board,
+.viz-clipboard .tab,
+.viz-clipboard .check {
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.viz-clipboard .tab {
+  fill: var(--surface);
+}
+
+.viz-clipboard .held {
+  fill: var(--surface-raised);
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
+}
+
+.viz-clipboard .card {
+  opacity: 0.35;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: translateX(14px);
+}
+
+.viz-clipboard .card-body {
+  fill: var(--surface);
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
+}
+
+.viz-clipboard .thumb {
+  fill: var(--surface-raised);
+}
+
+.viz-clipboard .card-actions {
+  fill: var(--text-faint);
+  opacity: 0;
+}
+
+/* Annotate: four tools placed in ink, committing to the accent in tool order. */
+.viz-annotate .arrow,
+.viz-annotate .badge,
+.viz-annotate .frame,
+.viz-annotate .pixels {
+  opacity: 0.55;
+}
+
+.viz-annotate .arrow-shaft,
+.viz-annotate .arrow-head {
+  fill: none;
+  stroke: var(--text-dim);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.viz-annotate .arrow-head {
+  stroke-linejoin: miter;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.92);
+}
+
+.viz-annotate .badge {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.92);
+}
+
+.viz-annotate .badge circle {
+  fill: var(--text-dim);
+}
+
+.viz-annotate .badge text {
+  fill: var(--surface);
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.viz-annotate .frame {
+  fill: none;
+  stroke: var(--text-dim);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.viz-annotate .pixels {
+  fill: var(--text-dim);
+}
+
+.viz-annotate .cell-a {
+  opacity: 0.45;
+}
+
+.viz-annotate .cell-b {
+  opacity: 0.85;
+}
+
+/* Backdrop: a thin ink gradient peeks around the shot, K grows it to full padding. */
+.viz-backdrop .stop-start {
+  stop-color: var(--text-faint);
+}
+
+.viz-backdrop .stop-end {
+  stop-color: var(--text-primary);
+}
+
+.viz-backdrop .backdrop {
+  fill: url(#snimach-viz-backdrop-gradient);
+  opacity: 0.5;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.viz-backdrop .shadow {
+  fill: var(--shadow-shot);
+  opacity: 0;
+}
+
+.viz-backdrop .shot {
+  rx: 4px;
+}
+
+/* Inspect: a loupe over the shot, a readout pill that fills with the picked hex. */
+.viz-inspect .loupe {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.viz-inspect .grid rect {
+  fill: var(--text-faint);
+}
+
+.viz-inspect .grid .g1 {
+  opacity: 0.15;
+}
+
+.viz-inspect .grid .g2 {
+  opacity: 0.3;
+}
+
+.viz-inspect .grid .g3 {
+  opacity: 0.45;
+}
+
+.viz-inspect .pixel {
+  fill: transparent;
+  stroke: var(--text-primary);
+  stroke-width: 1.5;
+}
+
+.viz-inspect .ring {
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-width: 1.5;
+}
+
+.viz-inspect .pill {
+  fill: var(--surface);
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
+}
+
+.viz-inspect .swatch {
+  fill: transparent;
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
+}
+
+.viz-inspect .hex {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-variant-numeric: tabular-nums;
+  dominant-baseline: central;
+}
+
+.viz-inspect .hex-rest {
+  fill: var(--text-faint);
+}
+
+.viz-inspect .hex-live {
+  fill: var(--text-primary);
+  opacity: 0;
+}
+
+.viz-inspect .copy-back,
+.viz-inspect .copy-front {
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-width: 1.5;
+}
+
+.viz-inspect .copy-back {
+  opacity: 0.5;
+}
+
+.viz-inspect .copy-front {
+  fill: var(--surface);
+}
+
+/* ---- Hover: the only trigger. Reduced-motion and touch users get the rest state. ---- */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .viz-capture .cutout,
+  .viz-capture .brackets,
+  .viz-capture .label,
+  .viz-clipboard .check,
+  .viz-clipboard .card,
+  .viz-clipboard .card-actions,
+  .viz-annotate .arrow,
+  .viz-annotate .arrow-shaft,
+  .viz-annotate .arrow-head,
+  .viz-annotate .badge,
+  .viz-annotate .badge circle,
+  .viz-annotate .frame,
+  .viz-annotate .pixels,
+  .viz-backdrop .stop-end,
+  .viz-backdrop .backdrop,
+  .viz-backdrop .shadow,
+  .viz-backdrop .shot,
+  .viz-inspect .loupe,
+  .viz-inspect .pixel,
+  .viz-inspect .swatch,
+  .viz-inspect .hex,
+  .viz-inspect .copy-back,
+  .viz-inspect .copy-front {
+    transition-duration: 300ms;
+    transition-timing-function: var(--ease-out);
+  }
+
+  .viz-capture .cutout,
+  .viz-capture .label,
+  .viz-clipboard .card-actions,
+  .viz-backdrop .shadow,
+  .viz-inspect .hex {
+    transition-property: opacity;
+  }
+
+  .viz-capture .brackets,
+  .viz-clipboard .card {
+    transition-property: opacity, transform;
+  }
+
+  .viz-clipboard .check {
+    transition-property: stroke;
+    transition-duration: 150ms;
+  }
+
+  .viz-annotate .arrow,
+  .viz-annotate .frame,
+  .viz-annotate .pixels {
+    transition-property: opacity, fill, stroke;
+  }
+
+  .viz-annotate .arrow-shaft {
+    transition-property: stroke;
+  }
+
+  .viz-annotate .arrow-head {
+    transition-property: stroke, transform;
+  }
+
+  .viz-annotate .badge {
+    transition-property: opacity, transform;
+  }
+
+  .viz-annotate .badge circle {
+    transition-property: fill;
+  }
+
+  .viz-backdrop .stop-end {
+    transition-property: stop-color;
+  }
+
+  .viz-backdrop .backdrop {
+    transition-property: opacity, transform;
+  }
+
+  .viz-backdrop .shot {
+    transition-property: rx;
+  }
+
+  .viz-inspect .loupe {
+    transition-property: transform;
+  }
+
+  .viz-inspect .pixel,
+  .viz-inspect .swatch {
+    transition-property: fill;
+  }
+
+  .viz-inspect .copy-back,
+  .viz-inspect .copy-front {
+    transition-property: stroke;
+  }
+
+  /* Capture */
+  .bento article:hover .viz-capture .cutout {
+    opacity: 1;
+  }
+
+  .bento article:hover .viz-capture .brackets {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .bento article:hover .viz-capture .label {
+    opacity: 0.9;
+  }
+
+  .bento article:hover .viz-capture .panel-window :is(.cutout, .brackets, .label) {
+    transition-delay: 70ms;
+  }
+
+  .bento article:hover .viz-capture .panel-screen :is(.cutout, .brackets, .label) {
+    transition-delay: 140ms;
+  }
+
+  /* Clipboard */
+  .bento article:hover .viz-clipboard .check {
+    stroke: var(--accent);
+  }
+
+  .bento article:hover .viz-clipboard .card {
+    opacity: 1;
+    transform: translateX(0);
+    transition-delay: 60ms;
+  }
+
+  .bento article:hover .viz-clipboard .card-actions {
+    opacity: 0.7;
+    transition-delay: 120ms;
+  }
+
+  /* Annotate */
+  .bento article:hover .viz-annotate :is(.arrow, .badge, .frame, .pixels) {
+    opacity: 1;
+  }
+
+  .bento article:hover .viz-annotate :is(.arrow-shaft, .arrow-head, .frame) {
+    stroke: var(--accent);
+  }
+
+  .bento article:hover .viz-annotate :is(.badge circle, .pixels) {
+    fill: var(--accent);
+  }
+
+  .bento article:hover .viz-annotate :is(.arrow-head, .badge) {
+    transform: scale(1);
+  }
+
+  .bento article:hover .viz-annotate :is(.badge, .badge circle) {
+    transition-delay: 50ms;
+  }
+
+  .bento article:hover .viz-annotate .frame {
+    transition-delay: 100ms;
+  }
+
+  .bento article:hover .viz-annotate .pixels {
+    transition-delay: 150ms;
+  }
+
+  /* Backdrop */
+  .bento article:hover .viz-backdrop .backdrop {
+    opacity: 1;
+    transform: scale(1.5, 1.333);
+  }
+
+  .bento article:hover .viz-backdrop .stop-end {
+    stop-color: color-mix(in oklab, var(--accent) 35%, var(--text-primary));
+  }
+
+  .bento article:hover .viz-backdrop .shadow {
+    opacity: 0.6;
+  }
+
+  .bento article:hover .viz-backdrop .shot {
+    rx: 8px;
+  }
+
+  /* Inspect */
+  .bento article:hover .viz-inspect .loupe {
+    transform: translate(10px, -4px);
+  }
+
+  .bento article:hover .viz-inspect :is(.pixel, .swatch) {
+    fill: var(--accent);
+  }
+
+  .bento article:hover .viz-inspect .hex-rest {
+    opacity: 0;
+  }
+
+  .bento article:hover .viz-inspect .hex-live {
+    opacity: 1;
+  }
+
+  .bento article:hover .viz-inspect :is(.swatch, .hex) {
+    transition-delay: 80ms;
+  }
+
+  .bento article:hover .viz-inspect :is(.copy-back, .copy-front) {
+    stroke: var(--accent);
+    transition-delay: 140ms;
   }
 }

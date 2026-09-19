@@ -4,6 +4,7 @@ use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag};
 
 use crate::assets::{Fingerprint, LOGO_PATH, OG_IMAGE_PATH, SCREENSHOT_PATH, STYLESHEET_PATH};
 use crate::github::{REPOSITORY_URL, Release, latest_with_download};
+use crate::viz;
 
 const DESCRIPTION: &str = "Snimach is a menubar screenshot app for macOS. Capture with a hotkey, annotate in a small editor, and the shot is already on your clipboard.";
 const OG_IMAGE_ALT: &str = "Snimach's editor with an arrow annotation";
@@ -45,33 +46,27 @@ pub fn home(releases: &[Release], fingerprint: &Fingerprint) -> String {
             }
             div .bento {
                 article .tile-wide {
-                    h2 { "Three captures, three hotkeys" }
-                    p { "An area, the frontmost window, or the whole screen under the pointer. Shift squares an area selection and Space moves it." }
-                    ul .keys {
-                        li { "⌘⇧A" }
-                        li { "⌘⇧W" }
-                        li { "⌘⇧E" }
-                    }
+                    (viz::capture())
+                    h2 { "Three ways to capture" }
+                    p { "An area, the frontmost window, or the whole screen under the pointer. Shift squares an area selection and Space moves it. The shortcuts are yours to change." }
                 }
                 article {
+                    (viz::clipboard())
                     h2 { "Clipboard first" }
                     p { "Every shot is on the clipboard the moment it is taken. A small preview card fades if you ignore it and opens the editor if you click it." }
                 }
                 article {
+                    (viz::annotate())
                     h2 { "Annotate in seconds" }
                     p { "Arrows, numbered badges, rectangles and pixelated redaction, with undo and redo. Enter copies and closes." }
-                    ul .keys {
-                        li { "A" }
-                        li { "N" }
-                        li { "R" }
-                        li { "B" }
-                    }
                 }
                 article {
+                    (viz::backdrop())
                     h2 { "Backdrops" }
                     p { "Frame a shot on a gradient preset when it is going somewhere public." }
                 }
                 article {
+                    (viz::inspect())
                     h2 { "Color inspector" }
                     p { "Hover to preview, click to select, copy the hex. Handy for design reviews." }
                 }
