@@ -1,6 +1,7 @@
 #!/bin/sh
 # Stores the Sparkle update signing key as the SPARKLE_PRIVATE_KEY GitHub
-# secret and writes the public key into App/Info.plist. Sparkle keeps one key
+# secret and writes the public key into App/project.yml, which xcodegen copies
+# into Info.plist on every generate. Sparkle keeps one key
 # per user account in the login keychain, so this reuses the key already there
 # or creates it on first run.
 #
@@ -12,7 +13,7 @@ set -eu
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 cd "$script_dir/.."
 
-plist=App/Info.plist
+project=App/project.yml
 backup=${1:-}
 
 gh auth status >/dev/null 2>&1 || { echo "Run 'gh auth login' first." >&2; exit 1; }
@@ -34,6 +35,6 @@ if [ -n "$backup" ]; then
   echo "Private key backed up to $backup."
 fi
 
-/usr/libexec/PlistBuddy -c "Delete :SUPublicEDKey" "$plist" 2>/dev/null || true
-/usr/libexec/PlistBuddy -c "Add :SUPublicEDKey string $public_key" "$plist"
-echo "SPARKLE_PRIVATE_KEY stored on $repo and the public key written to $plist. Commit that change."
+sed -i '' "s|^\( *SUPublicEDKey: \).*|\1\"$public_key\"|" "$project"
+grep -q "SUPublicEDKey: \"$public_key\"" "$project"
+echo "SPARKLE_PRIVATE_KEY stored on $repo and the public key written to $project. Commit that change."

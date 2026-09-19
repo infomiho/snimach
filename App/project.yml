@@ -45,6 +45,10 @@ targets:
         LSUIElement: true
         CFBundleIconFile: Snimach
         NSHumanReadableCopyright: "Copyright © 2026 Two Ducks"
+        SUFeedURL: "$(SPARKLE_FEED_URL)"
+        SUPublicEDKey: "BTGo0zVhakbtnWIefhEF6pR1Fpsac6ZlOT1EGk5Icvk="
+        SUEnableAutomaticChecks: true
+        SUAllowsAutomaticUpdates: false
     entitlements:
       path: Snimach.entitlements
       properties: {}
