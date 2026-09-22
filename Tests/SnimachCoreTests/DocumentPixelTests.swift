@@ -146,6 +146,15 @@ final class DocumentPixelTests: XCTestCase {
         XCTAssertEqual(ColorProbe.hex(at: CGPoint(x: 1.6, y: 0.7), in: shot), "#000000")
     }
 
+    func testColorProbeFlipsDocumentPointsToImageRows() {
+        // Checker fixture, 1 pt cells, bottom-left cell black. Document y 2.5 is 1.5 points
+        // below the top, so it samples context row 1 from the bottom: 1 + 1 = 2, even, black;
+        // 2 + 1 = 3, odd, white. Without the flip both answers invert.
+        let shot = makeCheckerShot(pointSize: CGSize(width: 4, height: 4), scale: 1)
+        XCTAssertEqual(ColorProbe.hex(at: CGPoint(x: 0.5, y: 2.5), in: shot), "#000000")
+        XCTAssertEqual(ColorProbe.hex(at: CGPoint(x: 1.5, y: 2.5), in: shot), "#FFFFFF")
+    }
+
     func testRedactionCoversEveryPixelTheRectTouches() {
         // All white except a black band at document x 6...7, which the drag only grazes.
         let context = makeContext(width: 8, height: 8)

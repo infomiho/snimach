@@ -203,6 +203,7 @@ public final class Capturer {
         )
         try Task.checkCancellation()
 
+        // SCK returns exactly the requested pixel size, which the Shot assert below relies on.
         return Shot(
             image: image,
             scale: display.scale,

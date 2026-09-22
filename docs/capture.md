@@ -242,7 +242,7 @@ and save path do zero geometry), in the freeze (hover states survive, the overla
 exact shot, mouse-up is instant), in the single window path (shadow or not, sheets included)
 and in the permission mapping that folds three CG and SCK signals into one enum. The
 geometry rules (space flip, clamp, pixel crop, shadow margin, alpha trim) are pure
-functions on `CaptureGeometry` and `Shot`.
+functions on `CaptureGeometry` and `Shot`, with the drag clamp on `RubberBand`.
 
 **Leverage is thin** in the port's `captureRegion`, which lets SCK's shape (window allow-list,
 shadow flag) through because it is one method and the fake stays trivial. Clamping to one

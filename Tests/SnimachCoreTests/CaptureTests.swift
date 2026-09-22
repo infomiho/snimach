@@ -125,6 +125,22 @@ final class CaptureTests: XCTestCase {
         XCTAssertEqual(Set(backend.captureCalls.map(\.display)), [display2x.id, display1x.id])
     }
 
+    func testStraddlingSelectionIsConfinedToTheDisplayHoldingMost() async throws {
+        let backend = FakeCaptureBackend()
+        backend.displaysList = [display2x, display1x]
+        let selector = ScriptedAreaSelector([.rect(CGRect(x: 900, y: 100, width: 300, height: 200))])
+        let capturer = makeCapturer(backend: backend, selector: selector)
+
+        let shot = try await capturer.capture(.area)
+
+        // 100 pt of the rect sits on the 2x display, 200 pt on the 1x one: the 1x display wins,
+        // the crop is its left 200x200 pixels, and the frame is AppKit (1000, 500, 200, 200).
+        XCTAssertEqual(shot.scale, 1)
+        XCTAssertEqual(shot.image.width, 200)
+        XCTAssertEqual(shot.image.height, 200)
+        XCTAssertEqual(shot.frame, CGRect(x: 1000, y: 500, width: 200, height: 200))
+    }
+
     func testSelectorCancellationPropagates() async throws {
         let backend = FakeCaptureBackend()
         backend.displaysList = [display2x]
@@ -344,6 +360,8 @@ final class CaptureTests: XCTestCase {
         XCTAssertEqual(shot.image.width, 400)
         XCTAssertEqual(shot.image.height, 200)
         XCTAssertEqual(shot.frame.size, CGSize(width: 200, height: 100))
+        XCTAssertEqual(shot.frame.origin, CGPoint(x: 100, y: 600),
+                       "without the shadow the trim lands exactly on the window frame")
     }
 
     func testNoEligibleWindowThrowsNoWindow() async throws {

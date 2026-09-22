@@ -84,7 +84,7 @@ Package dependency: `sindresorhus/KeyboardShortcuts` 3.x. Carbon hotkeys, no per
 
 **Launch at login.** `SMAppService.mainApp`. Status is read from the system every time, never cached, because the user can toggle it in System Settings. `.requiresApproval` shows a one-line hint with `SMAppService.openSystemSettingsLoginItems()`.
 
-**Permission.** The shell makes no `CGPreflightScreenCaptureAccess` or `CGRequestScreenCaptureAccess` calls. Screen Recording cannot be granted in-process, and a fresh grant needs a relaunch, so the Capturer reports a three-way state on the thrown `CaptureError.permission` and the shell only renders it. During development every re-signed build resets the grant.
+**Permission.** The shell makes no `CGPreflightScreenCaptureAccess` or `CGRequestScreenCaptureAccess` calls. Screen Recording cannot be granted in-process, and a fresh grant needs a relaunch, so the Capturer reports permission state on the thrown `CaptureError.permission` and the shell only renders it. During development every re-signed build resets the grant.
 
 ## Testable vs deliberately untested
 
