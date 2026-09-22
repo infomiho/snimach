@@ -109,8 +109,7 @@ public final class Capturer {
         }
         try Task.checkCancellation()
 
-        guard selection.width >= Self.minimumSelection, selection.height >= Self.minimumSelection,
-              let display = CaptureGeometry.displayHoldingMost(of: selection, in: displays),
+        guard let display = CaptureGeometry.displayHoldingMost(of: selection, in: displays),
               let source = frozen.first(where: { $0.display.id == display.id })
         else {
             throw CancellationError()
@@ -332,6 +331,5 @@ public final class Capturer {
         return .permission(.notDetermined)
     }
 
-    private static let minimumSelection: CGFloat = 2
     private static let shadowMargin: CGFloat = 64
 }

@@ -117,15 +117,18 @@ activates, and re-activates it on cancel. The content view is layer-backed with 
 image as `layer.contents` (matched to the screen through `NSScreenNumber`), and an
 `OverlayView` on top draws a 40% dim with the selection cut out, `NSCursor.crosshair`, a
 size label and, before the drag starts, full-width and full-height guidelines through the
-pointer, so a drag redraws only the dim. The drag itself is a `RubberBand` value: anchor and
-tip in AppKit points clamped to the frame of the panel under mouse-down (the pointer on a display's
-top edge sits outside `NSScreen.frame`), Shift squares it along the longer side (shrinking to
-the room left) and reshapes the band the moment it is pressed or released, Space slides the
-whole band and resizing resumes from the moved anchor. Esc, Space and Shift arrive via
-`keyDown`, `keyUp` and `flagsChanged`. Mouse moves arrive through an always-active
-`NSTrackingArea` per panel, since plain mouse-moved events reach the key window only. The
-y flip uses `NSScreen.screens[0]`, the primary display, not `NSScreen.main`, which is the key
-window's screen.
+pointer, so a drag redraws only the dim. Every selection decision lives in `AreaSelection`,
+not in this class: the drag is a `RubberBand` value inside it (anchor and tip in AppKit points
+clamped to the frame of the panel under mouse-down, the pointer on a display's top edge sits
+outside `NSScreen.frame`), Shift squares it along the longer side (shrinking to the room left)
+and reshapes the band the moment it is pressed or released, Space slides the whole band and
+resizing resumes from the moved anchor, a released drag smaller than 2x2 pt falls back to the
+window hovered before the press, and a click with no drag picks that window. `release()` hands
+back only an accepted region, already flipped to CG points, so a too-small selection has no
+path out of the seam. Esc, Space and Shift arrive via `keyDown`, `keyUp` and `flagsChanged`.
+Mouse moves arrive through an always-active `NSTrackingArea` per panel, since plain mouse-moved
+events reach the key window only. The flip height comes from `NSScreen.screens[0]`, the primary
+display, not `NSScreen.main`, which is the key window's screen.
 
 **Two coordinate spaces.** AppKit is y-up. SCK and `CGWindowListCopyWindowInfo` are y-down from
 the main display's top-left, in points. One conversion: `cgY = mainDisplayHeight - appKitMaxY`.
@@ -195,11 +198,15 @@ struct FrozenDisplay { let display: DisplayInfo; let image: CGImage }
 protocol AreaSelector {
     // `windows` are the pickable frames in CG points, front to back.
     func select(over displays: [FrozenDisplay], windows: [CGRect]) async throws -> CGRect /*CG pts*/
+    func cancel()
 }
 ```
 
-`OverlayAreaSelector` is the AppKit adapter above. `ScriptedAreaSelector` returns a preset rect,
-throws, or suspends, and records what it was shown.
+`OverlayAreaSelector` is the AppKit relay above. `AreaSelection`, pure and tested, holds every
+decision: the band, the thresholds, the hover pick, the flips. Its `release()` hands back only
+a region the user accepted, so the protocol's single error is `CancellationError`.
+`ScriptedAreaSelector` returns a preset accepted rect, throws, or suspends, and records what
+it was shown.
 
 **Tests at the interface** (XCTest, `@MainActor`, no screen, no permission):
 
@@ -211,12 +218,16 @@ throws, or suspends, and records what it was shown.
 - `RubberBand`: drag clamps to the display, Shift squares along the longer side and shrinks at
   the edge, toggling Shift reshapes the band at once, an origin outside the display starts on
   its edge, Space slides the band until it touches the edge and resizing resumes from there
+- `AreaSelection`: a released drag emits the accepted region in CG points, a too-small drag
+  falls back to the hovered window or to nothing, a click with no drag picks the window, the
+  highlight hands off from pick to band past 3 pt, Shift squares, Space slides, backgrounding
+  cancels only once a press started the drag, and a drag past the edge ends at the edge
 - the area shot owns its pixels (row stride equals its width), so the frozen displays are freed
   on teardown
 - area hands the selector the pickable windows, front to back, with ours, the wrong layer, the
   invisible and the tiny left out, and `frontmostWindow(containing:in:)` picks among them
 - full screen captures the display under the pointer, falling back to the first display
-- drag under 2x2 pt, Esc and Task cancellation each throw `CancellationError`, no overlay left,
+- Esc and Task cancellation each throw `CancellationError`, no overlay left,
   a cancel during the freeze never opens the selector
 - second `capture(.area)` during a suspended first one: the first is cancelled, the second runs
 - active window skips layer != 0, alpha 0, tiny and our own windows, passes companions and

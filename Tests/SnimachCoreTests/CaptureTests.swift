@@ -125,16 +125,6 @@ final class CaptureTests: XCTestCase {
         XCTAssertEqual(Set(backend.captureCalls.map(\.display)), [display2x.id, display1x.id])
     }
 
-    func testTinySelectionThrowsCancellation() async throws {
-        let backend = FakeCaptureBackend()
-        backend.displaysList = [display2x]
-        let selector = ScriptedAreaSelector([.rect(CGRect(x: 10, y: 10, width: 1, height: 1))])
-        let capturer = makeCapturer(backend: backend, selector: selector)
-
-        await XCTAssertThrowsCancellation { _ = try await capturer.capture(.area) }
-        XCTAssertEqual(selector.callCount, 1)
-    }
-
     func testSelectorCancellationPropagates() async throws {
         let backend = FakeCaptureBackend()
         backend.displaysList = [display2x]

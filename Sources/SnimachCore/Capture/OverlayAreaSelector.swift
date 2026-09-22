@@ -3,24 +3,20 @@ import CoreGraphics
 
 /// One borderless window per `NSScreen`, at `.screenSaver` level so it sits above everything,
 /// including full-screen apps. Each window shows its display's frozen pixels under the dim, so
-/// the user selects on the exact image the shot is cropped from. The drag is in AppKit global
-/// points, clamped to the display where it started. Esc, a tiny drag or task cancellation end it
-/// with `CancellationError`.
+/// the user selects on the exact image the shot is cropped from. Every selection decision lives
+/// in `AreaSelection`, tested; this class only shows panels, forwards events and paints.
+/// Esc, task cancellation, a vanishing screen, or a tiny drag with no window under it end the
+/// selection with `CancellationError`.
 @MainActor
 final class OverlayAreaSelector: NSObject, AreaSelector {
     private var panels: [OverlayPanel] = []
     private var frozen: [FrozenDisplay] = []
-    /// Pickable windows as handed in, CG points, front to back.
+    /// Pickable windows as handed in, CG points, front to back, until the screens are known.
     private var pickable: [CGRect] = []
-    /// The same windows in AppKit points, filled in once the screens are known.
-    private var windows: [CGRect] = []
-    /// The window under the pointer before any drag starts.
-    private var hovered: CGRect?
     private var previousApp: NSRunningApplication?
     private var continuation: CheckedContinuation<CGRect, Error>?
     private var isFinished = false
-    private var band: RubberBand?
-    private var mainDisplayHeight: CGFloat = 0
+    private var selection: AreaSelection?
     private var cursorPushed = false
 
     func select(over displays: [FrozenDisplay], windows: [CGRect]) async throws -> CGRect {
@@ -44,13 +40,14 @@ final class OverlayAreaSelector: NSObject, AreaSelector {
     private func present() {
         let screens = NSScreen.screens
         guard !screens.isEmpty else {
-            finish(with: .failure(CaptureError.failed(underlying: OverlayError.noScreens)))
+            // Transient in practice: the freeze just enumerated displays. Idle, like Esc.
+            finish(with: .failure(CancellationError()))
             return
         }
         // `NSScreen.main` is the key window's screen, which can be any display. The flip needs
         // the primary display, the one at origin zero, which AppKit lists first.
-        mainDisplayHeight = screens[0].frame.height
-        windows = pickable.map(flipped)
+        selection = AreaSelection(mainDisplayHeight: screens[0].frame.height,
+                                  pickableWindows: pickable)
         previousApp = NSWorkspace.shared.frontmostApplication
 
         for screen in screens {
@@ -150,7 +147,7 @@ final class OverlayAreaSelector: NSObject, AreaSelector {
             NSCursor.pop()
             cursorPushed = false
         }
-        guard band != nil else { return }
+        guard selection?.hasDragUnderway == true else { return }
         cancel()
     }
 
@@ -162,68 +159,57 @@ final class OverlayAreaSelector: NSObject, AreaSelector {
     /// display, where the pointer sits outside every `NSScreen.frame`, still starts a drag there.
     func mouseDown(at point: CGPoint, within bounds: CGRect) {
         guard !isFinished else { return }
-        band = RubberBand(origin: point, bounds: bounds)
-        band?.isSquare = NSEvent.modifierFlags.contains(.shift)
+        selection?.press(at: point, within: bounds,
+                         shiftHeld: NSEvent.modifierFlags.contains(.shift))
         refresh()
     }
 
     func mouseDragged(to point: CGPoint) {
-        guard !isFinished, band != nil else { return }
-        band?.drag(to: point)
+        guard !isFinished, selection?.hasDragUnderway == true else { return }
+        selection?.drag(to: point)
         refresh()
     }
 
     func mouseMoved() {
-        guard !isFinished, band == nil else { return }
-        hovered = CaptureGeometry.frontmostWindow(containing: NSEvent.mouseLocation, in: windows)
+        guard !isFinished, selection?.hasDragUnderway != true else { return }
+        selection?.pointerMoved(to: NSEvent.mouseLocation)
         refresh()
     }
 
     func mouseUp() {
         guard !isFinished else { return }
-        if let rect = band?.rect, rect.width >= 2, rect.height >= 2 {
-            finish(with: .success(flipped(rect)))
-        } else if let hovered {
-            // A click with no drag takes the window under the pointer.
-            finish(with: .success(flipped(hovered)))
+        if let rect = selection?.release() {
+            finish(with: .success(rect))
         } else {
             finish(with: .failure(CancellationError()))
         }
     }
 
     func spaceChanged(isDown: Bool) {
-        band?.isMoving = isDown
+        selection?.setSpaceHeld(isDown)
     }
 
     func modifiersChanged(_ flags: NSEvent.ModifierFlags) {
-        guard band != nil else { return }
-        band?.isSquare = flags.contains(.shift)
+        guard selection?.hasDragUnderway == true else { return }
+        selection?.setShiftHeld(flags.contains(.shift))
         refresh()
     }
 
     /// The views redraw only when their selection or guideline position changed, so a pointer
     /// moving on one display does not repaint the others.
-    private static let dragThreshold: CGFloat = 3
-
-    /// True once the drag is big enough to mean a region rather than a click.
-    private var isDragging: Bool {
-        guard let rect = band?.rect else { return false }
-        return rect.width >= Self.dragThreshold || rect.height >= Self.dragThreshold
-    }
-
     private func refresh() {
+        guard let selection else { return }
         let mouse = NSEvent.mouseLocation
-        let dragging = isDragging
         // A click that has not moved yet still shows the window under the pointer.
-        let shown = dragging ? band?.rect : (hovered ?? band?.rect)
+        let shown = selection.highlight
         for panel in panels {
             guard let view = panel.contentView?.subviews.first as? OverlayView else { continue }
             view.selection = shown?.intersection(view.screenFrame)
-            view.isPick = !dragging && hovered != nil
-            view.showsHint = !dragging
-            view.cursorPoint = band == nil && view.screenFrame.contains(mouse)
-                ? CGPoint(x: mouse.x - view.screenFrame.minX, y: mouse.y - view.screenFrame.minY)
-                : nil
+            view.isPick = selection.isPickHighlight
+            view.showsHint = !selection.isDragging
+            view.cursorPoint = selection.hasDragUnderway || !view.screenFrame.contains(mouse)
+                ? nil
+                : CGPoint(x: mouse.x - view.screenFrame.minX, y: mouse.y - view.screenFrame.minY)
         }
     }
 
@@ -252,22 +238,10 @@ final class OverlayAreaSelector: NSObject, AreaSelector {
         panels.removeAll()
         frozen.removeAll()
         pickable.removeAll()
-        windows.removeAll()
-        hovered = nil
-        band = nil
+        selection = nil
         previousApp?.activate()
         previousApp = nil
     }
-
-    /// Flips a rect between AppKit points and CG points. The conversion is its own inverse, so
-    /// one function serves both directions.
-    private func flipped(_ rect: CGRect) -> CGRect {
-        CaptureGeometry.appKitFrame(rect, mainDisplayHeight: mainDisplayHeight)
-    }
-}
-
-enum OverlayError: Error {
-    case noScreens
 }
 
 private final class OverlayPanel: NSWindow {
