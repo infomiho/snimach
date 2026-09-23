@@ -1,7 +1,7 @@
 import CoreGraphics
 
 /// The area-selection drag as a decision: pointer events in AppKit global points, the accepted
-/// region out in CG points.
+/// region or the picked window out.
 struct AreaSelection {
     /// A drag must cover this much on both axes to be a region rather than an accident. The
     /// seam's contract: `release()` only ever hands back a region that passed this check.
@@ -10,7 +10,8 @@ struct AreaSelection {
     private let mainDisplayHeight: CGFloat
     private let windows: [CGRect]
     private var band: RubberBand?
-    private var hovered: CGRect?
+    /// Index into `windows` of the pick candidate.
+    private var hovered: Int?
 
     init(mainDisplayHeight: CGFloat, pickableWindows: [CGRect]) {
         self.mainDisplayHeight = mainDisplayHeight
@@ -46,7 +47,9 @@ struct AreaSelection {
 
     /// The region to lift out of the dim, in AppKit global points: the band once it reads as a
     /// region, otherwise the hovered window if there is one.
-    var highlight: CGRect? { isDragging ? band?.rect : (hovered ?? band?.rect) }
+    var highlight: CGRect? { isDragging ? band?.rect : (hoveredFrame ?? band?.rect) }
+
+    private var hoveredFrame: CGRect? { hovered.map { windows[$0] } }
 
     /// True when the highlight is the hovered window rather than a dragged region.
     var isPickHighlight: Bool { !isDragging && hovered != nil }
@@ -61,12 +64,11 @@ struct AreaSelection {
 
     /// The accepted region in CG points, or nil when the user made no selection: a drag too
     /// small falls back to the window hovered before the press.
-    func release() -> CGRect? {
+    func release() -> AreaChoice? {
         if let rect = band?.rect,
            rect.width >= Self.minimumSize, rect.height >= Self.minimumSize {
-            return CaptureGeometry.appKitFrame(rect, mainDisplayHeight: mainDisplayHeight)
+            return .region(CaptureGeometry.appKitFrame(rect, mainDisplayHeight: mainDisplayHeight))
         }
-        guard let hovered else { return nil }
-        return CaptureGeometry.appKitFrame(hovered, mainDisplayHeight: mainDisplayHeight)
+        return hovered.map { .window($0) }
     }
 }

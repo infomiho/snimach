@@ -66,6 +66,50 @@ final class CaptureTests: XCTestCase {
         XCTAssertFalse(call.keepShadows)
     }
 
+    private let pickedFrame = CGRect(x: 100, y: 100, width: 200, height: 150)
+
+    /// The picked window, id 7, with a same-app popover, id 8, in front of it.
+    private func pickScenario(_ backend: FakeCaptureBackend) {
+        backend.displaysList = [display2x]
+        backend.transparentMargin = 64
+        backend.windows = [
+            WindowInfo(id: 8, pid: 99, layer: 3, alpha: 1,
+                       frame: CGRect(x: 150, y: 150, width: 50, height: 50)),
+            WindowInfo(id: 7, pid: 99, layer: 0, alpha: 1, frame: pickedFrame),
+        ]
+    }
+
+    /// The frozen display holds the desktop behind a window's rounded corners, so a pick is
+    /// captured again with only the window and its companions in the filter, shadow off.
+    func testAPickedWindowIsCapturedAloneWithoutItsShadow() async throws {
+        let backend = FakeCaptureBackend()
+        pickScenario(backend)
+        let capturer = makeCapturer(backend: backend, selector: ScriptedAreaSelector([.window(0)]))
+
+        let shot = try await capturer.capture(.area)
+
+        XCTAssertEqual(backend.captureCalls.count, 2)
+        let call = backend.captureCalls[1]
+        XCTAssertEqual(Set(call.only ?? []), [7, 8])
+        XCTAssertFalse(call.keepShadows)
+        XCTAssertEqual(shot.frame, CGRect(x: 100, y: 550, width: 200, height: 150))
+    }
+
+    /// A window that cannot be captured alone any more, closed after the hotkey for instance,
+    /// still gets its frame cut from the frozen display.
+    func testAPickFallsBackToTheFrozenCropWhenTheWindowCaptureFails() async throws {
+        let backend = FakeCaptureBackend()
+        pickScenario(backend)
+        backend.failsWindowCaptures = true
+        let capturer = makeCapturer(backend: backend, selector: ScriptedAreaSelector([.window(0)]))
+
+        let shot = try await capturer.capture(.area)
+
+        XCTAssertEqual(shot.frame, CGRect(x: 100, y: 550, width: 200, height: 150))
+        XCTAssertEqual(shot.image.width, 400)
+        XCTAssertEqual(shot.image.height, 300)
+    }
+
     func testAreaFreezesEveryDisplayBeforeTheSelectorOpens() async throws {
         let backend = FakeCaptureBackend()
         backend.displaysList = [display2x, display1x]
@@ -223,8 +267,8 @@ final class CaptureTests: XCTestCase {
         let back = CGRect(x: 50, y: 50, width: 200, height: 200)
         let windows = [front, back]
 
-        XCTAssertEqual(CaptureGeometry.frontmostWindow(containing: CGPoint(x: 60, y: 60), in: windows), front)
-        XCTAssertEqual(CaptureGeometry.frontmostWindow(containing: CGPoint(x: 180, y: 180), in: windows), back)
+        XCTAssertEqual(CaptureGeometry.frontmostWindow(containing: CGPoint(x: 60, y: 60), in: windows), 0)
+        XCTAssertEqual(CaptureGeometry.frontmostWindow(containing: CGPoint(x: 180, y: 180), in: windows), 1)
         XCTAssertNil(CaptureGeometry.frontmostWindow(containing: CGPoint(x: 400, y: 400), in: windows))
     }
 

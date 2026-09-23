@@ -14,12 +14,12 @@ final class OverlayAreaSelector: NSObject, AreaSelector {
     /// Pickable windows as handed in, CG points, front to back, until the screens are known.
     private var pickable: [CGRect] = []
     private var previousApp: NSRunningApplication?
-    private var continuation: CheckedContinuation<CGRect, Error>?
+    private var continuation: CheckedContinuation<AreaChoice, Error>?
     private var isFinished = false
     private var selection: AreaSelection?
     private var cursorPushed = false
 
-    func select(over displays: [FrozenDisplay], windows: [CGRect]) async throws -> CGRect {
+    func select(over displays: [FrozenDisplay], windows: [CGRect]) async throws -> AreaChoice {
         // A second `capture(.area)` cancels the first and restarts.
         if continuation != nil {
             finish(with: .failure(CancellationError()))
@@ -178,8 +178,8 @@ final class OverlayAreaSelector: NSObject, AreaSelector {
 
     func mouseUp() {
         guard !isFinished else { return }
-        if let rect = selection?.release() {
-            finish(with: .success(rect))
+        if let choice = selection?.release() {
+            finish(with: .success(choice))
         } else {
             finish(with: .failure(CancellationError()))
         }
@@ -213,14 +213,14 @@ final class OverlayAreaSelector: NSObject, AreaSelector {
         }
     }
 
-    private func finish(with result: Result<CGRect, Error>) {
+    private func finish(with result: Result<AreaChoice, Error>) {
         guard !isFinished else { return }
         isFinished = true
         let continuation = self.continuation
         self.continuation = nil
         teardown()
         switch result {
-        case .success(let rect): continuation?.resume(returning: rect)
+        case .success(let choice): continuation?.resume(returning: choice)
         case .failure(let error): continuation?.resume(throwing: error)
         }
     }

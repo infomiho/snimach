@@ -101,13 +101,26 @@ public final class Capturer {
         let frozen = try await freeze(displays)
         try Task.checkCancellation()
 
-        let pickable = Self.pickable(in: backend.onScreenWindowsFrontToBack(), ownPID: getpid())
-        let selection = try await withTaskCancellationHandler {
+        let windows = backend.onScreenWindowsFrontToBack()
+        let pickable = Self.pickable(in: windows, ownPID: getpid())
+        let choice = try await withTaskCancellationHandler {
             try await selector.select(over: frozen, windows: pickable.map(\.frame))
         } onCancel: {
             Task { @MainActor in self.selector.cancel() }
         }
         try Task.checkCancellation()
+
+        let selection: CGRect
+        switch choice {
+        case .region(let rect):
+            selection = rect
+        case .window(let index):
+            let window = pickable[index]
+            if let shot = try await livePick(of: window, among: windows, in: displays) {
+                return shot
+            }
+            selection = window.frame
+        }
 
         guard let display = CaptureGeometry.displayHoldingMost(of: selection, in: displays),
               let source = frozen.first(where: { $0.display.id == display.id })
@@ -211,16 +224,38 @@ public final class Capturer {
         )
     }
 
+    /// A picked window is captured again, alone, the way the active-window shot is: the frozen
+    /// display holds whatever sat behind its rounded corners, a window-only capture does not.
+    /// Nil when that capture fails or comes back empty, so the caller crops the frozen display.
+    private func livePick(of window: WindowInfo,
+                          among windows: [WindowInfo],
+                          in displays: [DisplayInfo]) async throws -> Shot? {
+        do {
+            return try await captureWindow(window, among: windows, in: displays, includeShadow: false)
+        } catch CaptureError.failed, CaptureError.noWindow {
+            return nil
+        }
+    }
+
     // MARK: - Active window
 
     private func captureActiveWindow(includeShadow: Bool) async throws -> Shot {
         let displays = try await loadDisplays()
-        let mainHeight = CaptureGeometry.mainDisplayHeight(in: displays)
         let windows = backend.onScreenWindowsFrontToBack()
+        guard let target = Self.target(in: windows, ownPID: getpid()) else {
+            throw CaptureError.noWindow
+        }
+        return try await captureWindow(target, among: windows, in: displays, includeShadow: includeShadow)
+    }
 
-        guard let target = Self.target(in: windows, ownPID: getpid()),
-              let display = CaptureGeometry.displayHoldingMost(of: target.frame, in: displays)
-        else {
+    /// The window and its companions alone, trimmed to their opaque pixels. Throws `noWindow`
+    /// when nothing opaque came back.
+    private func captureWindow(_ target: WindowInfo,
+                               among windows: [WindowInfo],
+                               in displays: [DisplayInfo],
+                               includeShadow: Bool) async throws -> Shot {
+        let mainHeight = CaptureGeometry.mainDisplayHeight(in: displays)
+        guard let display = CaptureGeometry.displayHoldingMost(of: target.frame, in: displays) else {
             throw CaptureError.noWindow
         }
 
@@ -243,14 +278,11 @@ public final class Capturer {
         )
         try Task.checkCancellation()
 
-        let trimmed = CaptureGeometry.opaqueBoundingBox(of: image)
-        let trimRect = trimmed ?? CGRect(
-            x: 0,
-            y: 0,
-            width: CGFloat(image.width),
-            height: CGFloat(image.height)
-        )
-        let output = trimmed.flatMap { image.cropping(to: $0) } ?? image
+        guard let trimRect = CaptureGeometry.opaqueBoundingBox(of: image),
+              let output = image.cropping(to: trimRect)
+        else {
+            throw CaptureError.noWindow
+        }
         let frameCG = CGRect(
             x: captureRect.minX + trimRect.minX / display.scale,
             y: captureRect.minY + trimRect.minY / display.scale,

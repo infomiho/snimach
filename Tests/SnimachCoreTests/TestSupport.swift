@@ -181,6 +181,8 @@ final class FakeCaptureBackend: CaptureBackend, @unchecked Sendable {
     var preflight = false
     var promptResult = false
     var failWithPermission = false
+    /// Captures filtered to windows throw, as SCK does for a window that closed.
+    var failsWindowCaptures = false
     var transparentMargin: CGFloat = 0
     var markerRect: CGRect?
     var beforeCaptureReturn: (() async -> Void)?
@@ -209,6 +211,7 @@ final class FakeCaptureBackend: CaptureBackend, @unchecked Sendable {
                        keepShadows: Bool,
                        showsCursor: Bool) async throws -> CGImage {
         if failWithPermission { throw BackendError.permissionDenied }
+        if failsWindowCaptures, windows != nil { throw FakeCaptureError.windowGone }
         let call = CaptureCall(
             display: display,
             rect: rect,
@@ -254,17 +257,22 @@ final class FakeCaptureBackend: CaptureBackend, @unchecked Sendable {
     }
 }
 
+enum FakeCaptureError: Error {
+    case windowGone
+}
+
 /// Returns preset selections in order, throws, or suspends until cancelled.
 @MainActor
 final class ScriptedAreaSelector: AreaSelector {
     enum Outcome {
         case rect(CGRect)
+        case window(Int)
         case fail(Error)
         case suspend
     }
 
     private(set) var outcomes: [Outcome]
-    private var waiters: [CheckedContinuation<CGRect, Error>] = []
+    private var waiters: [CheckedContinuation<AreaChoice, Error>] = []
     private(set) var callCount = 0
     private(set) var cancelCount = 0
     private(set) var shown: [[FrozenDisplay]] = []
@@ -276,14 +284,16 @@ final class ScriptedAreaSelector: AreaSelector {
         self.outcomes = outcomes
     }
 
-    func select(over displays: [FrozenDisplay], windows: [CGRect]) async throws -> CGRect {
+    func select(over displays: [FrozenDisplay], windows: [CGRect]) async throws -> AreaChoice {
         callCount += 1
         shown.append(displays)
         offeredWindows.append(windows)
         guard !outcomes.isEmpty else { throw CancellationError() }
         switch outcomes.removeFirst() {
         case .rect(let rect):
-            return rect
+            return .region(rect)
+        case .window(let index):
+            return .window(index)
         case .fail(let error):
             throw error
         case .suspend:

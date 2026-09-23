@@ -124,8 +124,8 @@ outside `NSScreen.frame`), Shift squares it along the longer side (shrinking to 
 and reshapes the band the moment it is pressed or released, Space slides the whole band and
 resizing resumes from the moved anchor, a released drag smaller than 2x2 pt falls back to the
 window hovered before the press, and a click with no drag picks that window. `release()` hands
-back only an accepted region, already flipped to CG points, so a too-small selection has no
-path out of the seam. Esc, Space and Shift arrive via `keyDown`, `keyUp` and `flagsChanged`.
+back only an accepted choice, a region already flipped to CG points or the index of the picked
+window, so a too-small selection has no path out of the seam. Esc, Space and Shift arrive via `keyDown`, `keyUp` and `flagsChanged`.
 Mouse moves arrive through an always-active `NSTrackingArea` per panel, since plain mouse-moved
 events reach the key window only. The flip height comes from `NSScreen.screens[0]`, the primary
 display, not `NSScreen.main`, which is the key window's screen.
@@ -138,7 +138,12 @@ the main display's top-left, in points. One conversion: `cgY = mainDisplayHeight
 `sourceRect = display bounds`, `width/height = display.size * display.scale`,
 `captureResolution = .best`, `showsCursor = false`. Excluding our app keeps the status item
 and any of our windows out. The clamped selection S (CG space) becomes the crop
-`(S - display.origin) * display.scale`. Mouse-up pays nothing.
+`(S - display.origin) * display.scale`. A dragged region pays nothing on mouse-up. A picked
+window is not cropped: its frame is a rectangle but the window has rounded corners, and the
+frozen display holds the desktop behind them. The pick is captured again live the way the
+active window is, with its companions and without the shadow, so its pixels come from the
+click rather than the hotkey. When that capture fails or comes back empty, the window closed
+for instance, the frame is cropped from the frozen display instead.
 
 **Active window.** `CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements])`
 returns front-to-back order. The first entry with layer 0, alpha > 0, bounds at least 20x20 pt
@@ -197,7 +202,11 @@ Fake adapter `FakeCaptureBackend` holds `displays`, `windows`, `preflight`, `pro
 struct FrozenDisplay { let display: DisplayInfo; let image: CGImage }
 protocol AreaSelector {
     // `windows` are the pickable frames in CG points, front to back.
-    func select(over displays: [FrozenDisplay], windows: [CGRect]) async throws -> CGRect /*CG pts*/
+    func select(over displays: [FrozenDisplay], windows: [CGRect]) async throws -> AreaChoice
+}
+enum AreaChoice {
+    case region(CGRect) // CG points
+    case window(Int)    // index into `windows`
     func cancel()
 }
 ```
@@ -205,7 +214,7 @@ protocol AreaSelector {
 `OverlayAreaSelector` is the AppKit relay above. `AreaSelection`, pure and tested, holds every
 decision: the band, the thresholds, the hover pick, the flips. Its `release()` hands back only
 a region the user accepted, so the protocol's single error is `CancellationError`.
-`ScriptedAreaSelector` returns a preset accepted rect, throws, or suspends, and records what
+`ScriptedAreaSelector` returns a preset region or window pick, throws, or suspends, and records what
 it was shown.
 
 **Tests at the interface** (XCTest, `@MainActor`, no screen, no permission):
@@ -214,6 +223,8 @@ it was shown.
   points times 2, AppKit-space frame, our pid excluded
 - every display is frozen and handed to the selector, the selection adds no capture call
 - the crop lands on the right pixels (a marker painted by the fake shows up where expected)
+- a picked window is captured again alone, companions in and shadow off, and falls back to
+  the frozen crop when that capture fails
 - drag from a 2x display onto a 1x one: rect clamped to the 2x display, `scale 2`
 - `RubberBand`: drag clamps to the display, Shift squares along the longer side and shrinks at
   the edge, toggling Shift reshapes the band at once, an origin outside the display starts on

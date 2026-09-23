@@ -50,15 +50,23 @@ protocol CaptureBackend: Sendable {
                        showsCursor: Bool) async throws -> CGImage
 }
 
+/// What the user accepted in the overlay.
+enum AreaChoice: Equatable {
+    /// A dragged region in CG points.
+    case region(CGRect)
+    /// The window at this index of the pickable frames handed to the selector.
+    case window(Int)
+}
+
 /// The in-process AppKit selection UI. A separate seam because it blocks on a human.
 @MainActor
 protocol AreaSelector: AnyObject {
-    /// Shows the frozen displays and returns the region the user accepted, in CG points: a
-    /// drag of at least 2x2 points clamped to the display it started on, or a picked window
-    /// frame from `windows` (pickable frames in CG points, front to back, so a click with no
-    /// drag can return one of them). The only error is `CancellationError`: every no-selection
-    /// outcome, including a too-small drag with nothing hovered, returns idle silently.
-    func select(over displays: [FrozenDisplay], windows: [CGRect]) async throws -> CGRect
+    /// Shows the frozen displays and returns what the user accepted: a drag of at least 2x2
+    /// points clamped to the display it started on, or a window picked from `windows`
+    /// (pickable frames in CG points, front to back) by a click with no drag. The only error is
+    /// `CancellationError`: every no-selection outcome, including a too-small drag with nothing
+    /// hovered, returns idle silently.
+    func select(over displays: [FrozenDisplay], windows: [CGRect]) async throws -> AreaChoice
     /// Ends any in-flight selection with `CancellationError`. Called on task cancellation.
     func cancel()
 }

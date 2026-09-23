@@ -8,9 +8,9 @@ enum CaptureGeometry {
         displays.first { $0.frame.contains(point) }
     }
 
-    /// The first window in front-to-back order that covers the point.
-    static func frontmostWindow(containing point: CGPoint, in windows: [CGRect]) -> CGRect? {
-        windows.first { $0.contains(point) }
+    /// The index of the first window in front-to-back order that covers the point.
+    static func frontmostWindow(containing point: CGPoint, in windows: [CGRect]) -> Int? {
+        windows.firstIndex { $0.contains(point) }
     }
 
     static func displayHoldingMost(of rect: CGRect, in displays: [DisplayInfo]) -> DisplayInfo? {

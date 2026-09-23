@@ -13,7 +13,7 @@ final class AreaSelectionTests: XCTestCase {
                         shiftHeld: false)
         selection.drag(to: CGPoint(x: 300, y: 250))
 
-        XCTAssertEqual(selection.release(), CGRect(x: 100, y: 550, width: 200, height: 150))
+        XCTAssertEqual(selection.release(), .region(CGRect(x: 100, y: 550, width: 200, height: 150)))
     }
 
     /// A drag one point wide and one tall is an accidental click, not a region.
@@ -36,7 +36,7 @@ final class AreaSelectionTests: XCTestCase {
         selection.drag(to: CGPoint(x: 102, y: 102))
 
         // AppKit (100, 100, 2, 2); top edge 102 above the bottom, CG top at 800 - 102.
-        XCTAssertEqual(selection.release(), CGRect(x: 100, y: 698, width: 2, height: 2))
+        XCTAssertEqual(selection.release(), .region(CGRect(x: 100, y: 698, width: 2, height: 2)))
     }
 
     /// 1x3 passes the 3-point show-the-band rule but still fails the 2-point accept rule, with
@@ -54,13 +54,13 @@ final class AreaSelectionTests: XCTestCase {
 
     /// One pickable window, given in backend CG points at (100, 100) spanning 200x150 on an
     /// 800-point-tall main display. In AppKit points it covers y 550...700; a pointer at
-    /// (150, 600) is inside it. A click with no drag selects it, returned exactly as handed in.
+    /// (150, 600) is inside it. A click with no drag selects it by its index.
     func testClickWithNoDragPicksTheHoveredWindow() {
         let window = CGRect(x: 100, y: 100, width: 200, height: 150)
         var selection = AreaSelection(mainDisplayHeight: 800, pickableWindows: [window])
         selection.pointerMoved(to: CGPoint(x: 150, y: 600))
 
-        XCTAssertEqual(selection.release(), window)
+        XCTAssertEqual(selection.release(), .window(0))
     }
 
     /// Moves after the press must not change the fallback: the pick froze at press time.
@@ -74,7 +74,7 @@ final class AreaSelectionTests: XCTestCase {
         selection.pointerMoved(to: CGPoint(x: 900, y: 100))
         selection.drag(to: CGPoint(x: 151, y: 600))
 
-        XCTAssertEqual(selection.release(), window)
+        XCTAssertEqual(selection.release(), .window(0))
     }
 
     /// The too-small drag lands on the same window: releasing it falls back to the pick,
@@ -88,7 +88,7 @@ final class AreaSelectionTests: XCTestCase {
                         shiftHeld: false)
         selection.drag(to: CGPoint(x: 151, y: 600))
 
-        XCTAssertEqual(selection.release(), window)
+        XCTAssertEqual(selection.release(), .window(0))
     }
 
     /// Before the drag, the highlight is the hovered window. Past three points on either axis
@@ -136,7 +136,7 @@ final class AreaSelectionTests: XCTestCase {
         selection.setShiftHeld(true)
         // Longer side 80: tip squares up to (180, 180). AppKit rect (100, 100, 80, 80) has its
         // top 180 above the bottom, so in CG points it starts 620 below the top.
-        XCTAssertEqual(selection.release(), CGRect(x: 100, y: 620, width: 80, height: 80))
+        XCTAssertEqual(selection.release(), .region(CGRect(x: 100, y: 620, width: 80, height: 80)))
     }
 
     /// Shift held already at press squares from the first drag, the common real-world path.
@@ -147,7 +147,7 @@ final class AreaSelectionTests: XCTestCase {
                         shiftHeld: true)
         selection.drag(to: CGPoint(x: 180, y: 140))
 
-        XCTAssertEqual(selection.release(), CGRect(x: 100, y: 620, width: 80, height: 80))
+        XCTAssertEqual(selection.release(), .region(CGRect(x: 100, y: 620, width: 80, height: 80)))
     }
 
     /// Space turns a continuing drag into a slide: the region keeps its size and moves.
@@ -160,7 +160,7 @@ final class AreaSelectionTests: XCTestCase {
         selection.setSpaceHeld(true)
         selection.drag(to: CGPoint(x: 150, y: 140))
         // The 100x80 region slid by (-50, -40): AppKit (50, 60, 100, 80), CG top at 800 - 140.
-        XCTAssertEqual(selection.release(), CGRect(x: 50, y: 660, width: 100, height: 80))
+        XCTAssertEqual(selection.release(), .region(CGRect(x: 50, y: 660, width: 100, height: 80)))
     }
 
     /// Releasing Space resumes resizing from the moved anchor.
@@ -177,7 +177,7 @@ final class AreaSelectionTests: XCTestCase {
 
         // Slid to AppKit (50, 60, 100, 80), then resized from (50, 60) to (170, 160):
         // AppKit (50, 60, 120, 100), CG top at 800 - 160.
-        XCTAssertEqual(selection.release(), CGRect(x: 50, y: 640, width: 120, height: 100))
+        XCTAssertEqual(selection.release(), .region(CGRect(x: 50, y: 640, width: 120, height: 100)))
     }
 
     /// Leaving the app mid-drag cancels; before any drag it must not, because the app
@@ -201,6 +201,6 @@ final class AreaSelectionTests: XCTestCase {
                         shiftHeld: false)
         selection.drag(to: CGPoint(x: 1500, y: 700))
         // Clamped tip (1000, 700): AppKit (990, 400, 10, 300), CG top at 800 - 700.
-        XCTAssertEqual(selection.release(), CGRect(x: 990, y: 100, width: 10, height: 300))
+        XCTAssertEqual(selection.release(), .region(CGRect(x: 990, y: 100, width: 10, height: 300)))
     }
 }
