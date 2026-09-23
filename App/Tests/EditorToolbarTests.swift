@@ -159,8 +159,14 @@ final class EditorToolbarTests: XCTestCase {
         controller.show()
         defer { controller.close() }
         controller.accessoryBar.presetsButton.performClick(nil)
+        // The popover animates in production, which is timing noise under test: wait for the
+        // state instead of asserting it synchronously, then switch animation off (togglePresets
+        // turns it back on at show time) so the later close cannot be swallowed by AppKit.
+        for _ in 0..<100 where !controller.backdropPopover.isShown {
+            try await Task.sleep(for: .milliseconds(50))
+        }
         XCTAssertTrue(controller.backdropPopover.isShown)
-        try await Task.sleep(for: .milliseconds(300))
+        controller.backdropPopover.animates = false
         XCTAssertNil(controller.backdropPicker.selection)
         XCTAssertTrue(controller.backdropPicker.window?.firstResponder === controller.backdropPicker)
         let rightArrow = try XCTUnwrap(NSEvent.keyEvent(with: .keyDown, location: .zero,
@@ -170,8 +176,8 @@ final class EditorToolbarTests: XCTestCase {
         XCTAssertTrue(controller.backdropPicker.window?.firstResponder === controller.backdropPicker.buttons.first)
         XCTAssertNil(controller.backdropPicker.selection)
         controller.backdropPicker.buttons[1].performClick(nil)
-        for _ in 0..<20 where controller.backdropPopover.isShown {
-            try await Task.sleep(for: .milliseconds(100))
+        for _ in 0..<120 where controller.backdropPopover.isShown {
+            try await Task.sleep(for: .milliseconds(50))
         }
         XCTAssertFalse(controller.backdropPopover.isShown)
         XCTAssertEqual(controller.document.backdropPreset.id, .arendelle)

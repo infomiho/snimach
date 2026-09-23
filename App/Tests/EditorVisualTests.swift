@@ -30,9 +30,18 @@ final class EditorVisualTests: XCTestCase {
             controller.panel.contentView?.layoutSubtreeIfNeeded()
             try await Task.sleep(for: .milliseconds(350))
             if presets {
+                // Screenshots need the popover up, deterministically. The transient behavior
+                // auto-dismisses on app deactivation, which the test host does on its own
+                // schedule, so screenshots pin it open; dismissal policy is covered by
+                // testPresetPopoverOpensAndSelectionDismissesIt, which keeps production behavior.
+                controller.backdropPopover.behavior = .applicationDefined
                 controller.accessoryBar.presetsButton.performClick(nil)
-                try await Task.sleep(for: .milliseconds(900))
+                for _ in 0..<100 where !controller.backdropPopover.isShown {
+                    try await Task.sleep(for: .milliseconds(50))
+                }
                 XCTAssertTrue(controller.backdropPopover.isShown)
+                // Let any in-flight show animation finish so the snapshot is representative.
+                try await Task.sleep(for: .milliseconds(300))
             }
             let windows = [controller.panel] + (presets ? [try XCTUnwrap(controller.backdropPicker.window)] : [])
             let snapshot = try await EditorSnapshot.capture(windows)
