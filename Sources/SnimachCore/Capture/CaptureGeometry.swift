@@ -70,24 +70,24 @@ enum CaptureGeometry {
         }
         context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
         guard let base = context.data else { return nil }
-        let data = base.bindMemory(to: UInt8.self, capacity: context.bytesPerRow * height)
+        let bytesPerRow = context.bytesPerRow
+        let data = base.bindMemory(to: UInt8.self, capacity: bytesPerRow * height)
+        func isOpaque(_ x: Int, _ y: Int) -> Bool { data[y * bytesPerRow + x * 4 + 3] > alphaThreshold }
+        func rowHasOpaque(_ y: Int) -> Bool { (0..<width).contains { isOpaque($0, y) } }
 
-        var minX = width
-        var minY = height
-        var maxX = -1
-        var maxY = -1
-        for y in 0..<height {
-            for x in 0..<width {
-                let alpha = data[y * context.bytesPerRow + x * 4 + 3]
-                if alpha > alphaThreshold {
-                    if x < minX { minX = x }
-                    if x > maxX { maxX = x }
-                    if y < minY { minY = y }
-                    if y > maxY { maxY = y }
-                }
-            }
+        // Scanning inward from each edge stops at the first opaque pixel, so a window with a
+        // shadow margin reads the margin only, not every pixel.
+        guard let minY = (0..<height).first(where: rowHasOpaque),
+              let maxY = (0..<height).last(where: rowHasOpaque)
+        else {
+            return nil
         }
-        guard maxX >= minX, maxY >= minY else { return nil }
+        func columnHasOpaque(_ x: Int) -> Bool { (minY...maxY).contains { isOpaque(x, $0) } }
+        guard let minX = (0..<width).first(where: columnHasOpaque),
+              let maxX = (0..<width).last(where: columnHasOpaque)
+        else {
+            return nil
+        }
         return CGRect(x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1)
     }
 
