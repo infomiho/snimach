@@ -316,6 +316,10 @@ private final class OverlayView: NSView {
 
     override var isFlipped: Bool { false }
 
+    /// Activating a menu bar app does not always take by the time the overlay shows. Without
+    /// this, the click that activates it is swallowed and a drag only starts on the second.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
     override func resetCursorRects() {
         addCursorRect(bounds, cursor: .crosshair)
     }
