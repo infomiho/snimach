@@ -40,6 +40,19 @@ final class ShotOutputTests: XCTestCase {
         }
     }
 
+    /// The TIFF is promised rather than written, so it has to resolve when a reader asks.
+    func testCopyTIFFResolvesToTheShotAtLogicalSize() throws {
+        let output = makeOutput()
+        let image = makeShot(pointSize: CGSize(width: 60, height: 40), scale: 2).image
+        try output.copy(image, scale: 2)
+
+        let data = try XCTUnwrap(pasteboard.data(forType: .tiff))
+        let rep = try XCTUnwrap(NSBitmapImageRep(data: data))
+        XCTAssertEqual(rep.pixelsWide, image.width)
+        XCTAssertEqual(rep.pixelsHigh, image.height)
+        XCTAssertEqual(rep.size, NSSize(width: 60, height: 40))
+    }
+
     func testCopyPNGCarriesDPIAndDimensions() throws {
         for scale in [CGFloat(1), 2, 3] {
             let image = makeShot(pointSize: CGSize(width: 60, height: 40), scale: scale).image

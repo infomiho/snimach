@@ -18,10 +18,11 @@ import CoreGraphics
 ///
 /// Performance (M2 Pro, synthetic image, real screenshots compress somewhat worse):
 ///   1200x800: PNG 7 ms, LZW TIFF 13 ms.  2880x1800: PNG 33 ms, TIFF 69 ms.
-///   5120x2880: PNG 94 ms, TIFF 190 ms. `copy` stays under about 300 ms even for a 5K
-///   display, `save` under about 100 ms. The PNG encoded for the most recent image and
-///   scale is kept, so `save` followed by `copy` of the same image encodes PNG once and the
-///   second call only pays for the TIFF. Nothing else is retained.
+///   5120x2880: PNG 94 ms, TIFF 190 ms. `copy` encodes only the PNG and promises the TIFF,
+///   so it stays under about 100 ms even for a 5K display, like `save`. The PNG encoded for
+///   the most recent image and scale is kept, so `save` followed by `copy` of the same image
+///   encodes PNG once. The pasteboard keeps the last copied image until a reader asks for its
+///   TIFF or the pasteboard changes.
 final class ShotOutput {
 
     /// `~/Pictures/Snimach`. ~/Pictures is not TCC-protected, so writing there never
@@ -41,8 +42,8 @@ final class ShotOutput {
     ///
     /// Invariants after return:
     ///   - The pasteboard holds exactly one item declaring `public.png` and `public.tiff`,
-    ///     both carrying DPI = 72 * scale. AppKit readers (Mail, Preview, Xcode, Notes) paste
-    ///     at `image.width / scale` points. Chromium readers (Slack, Notion, Chrome, Figma
+    ///     both carrying DPI = 72 * scale. The TIFF is encoded on the first read. AppKit
+    ///     readers (Mail, Preview, Xcode, Notes) paste at `image.width / scale` points. Chromium readers (Slack, Notion, Chrome, Figma
     ///     desktop) receive the PNG bytes with the pHYs chunk intact.
     ///   - Previous contents are gone, even on failure.
     /// - Parameters:
@@ -113,7 +114,7 @@ func editorDidSave(_ flattened: CGImage, scale: CGFloat) {
 
 ## What the implementation hides
 
-- **Pasteboard type set.** `NSImage.writeObjects` declares only `public.tiff`, and an uncompressed TIFF is two orders of magnitude larger than the PNG of the same bitmap. Chromium reads images through `NSImage(pasteboard:)` and prefers `public.png` when present, and Chromium apps themselves write both `public.png` and `public.tiff` ([Chromium clipboard_mac.mm](https://chromium.googlesource.com/chromium/src/+/master/ui/base/clipboard/clipboard_mac.mm), [claude-code #30934](https://github.com/anthropics/claude-code/issues/30934)). The implementation builds one `NSPasteboardItem`, calls `setData` for `.png` and `.tiff`, and writes it with `writeObjects`. AppKit adds the legacy `Apple PNG pasteboard type` and `NeXT TIFF v4.0 pasteboard type` aliases itself.
+- **Pasteboard type set.** `NSImage.writeObjects` declares only `public.tiff`, and an uncompressed TIFF is two orders of magnitude larger than the PNG of the same bitmap. Chromium reads images through `NSImage(pasteboard:)` and prefers `public.png` when present, and Chromium apps themselves write both `public.png` and `public.tiff` ([Chromium clipboard_mac.mm](https://chromium.googlesource.com/chromium/src/+/master/ui/base/clipboard/clipboard_mac.mm), [claude-code #30934](https://github.com/anthropics/claude-code/issues/30934)). The implementation builds one `NSPasteboardItem`, calls `setData` for `.png` and `setDataProvider` for `.tiff`, and writes it with `writeObjects`. Most readers take the PNG, so the TIFF, twice the PNG's encode time, is only paid for when a reader asks. AppKit adds the legacy `Apple PNG pasteboard type` and `NeXT TIFF v4.0 pasteboard type` aliases itself.
 - **DPI metadata.** PNG is encoded with `CGImageDestination` and `kCGImagePropertyDPIWidth/Height = 72 * scale`, which produces a pHYs chunk that `NSImage` decodes at logical point size. TIFF goes through `NSBitmapImageRep(cgImage:)` with `size` set to points, then `tiffRepresentation(using: .lzw, factor: 0)`, which stores the same resolution. Figma honors 144 DPI and places the image at 1x ([Figma forum](https://forum.figma.com/t/retina-images-and-screenshots-no-longer-pasting-or-importing-2x/25232)). Slack and Notion ignore DPI and scale to their layout, which is what users expect there.
 - **Never routes through `NSImage(cgImage:size:)`.** That path yields an `NSCGImageSnapshotRep` and has a known double-sizing bug on mixed-DPI setups ([gist](https://gist.github.com/jaz303/b0e73bc2effe71283b5c), [Apple forums](https://developer.apple.com/forums/thread/103621)).
 - **One encoder.** A private `encodePNG(image, scale) throws -> Data` produces the PNG bytes for both the pasteboard and the file, and the result for the most recent image and scale is cached. Internal seam, tested only through `copy` and `save`.
@@ -132,16 +133,17 @@ Tests at the interface, XCTest, no mocks:
 
 1. `copy` declares `public.png` and `public.tiff` on a single item, and `NSImage(pasteboard:)` reports `size == pixels / scale` for scale 1, 2 and 3.
 2. `copy` PNG bytes decode via `CGImageSource` to `DPIWidth == 72 * scale` and the original pixel dimensions.
-3. `copy` twice: only the second shot is present, `changeCount` advanced, one item.
-4. `save` into a missing nested folder creates it and returns a file that decodes to identical pixels.
-5. `save` twice with the same fixed clock yields `... .png` and `... (2).png`, both present, the first unchanged.
-6. `save` where `folder` sits under a read-only directory throws `folderUnavailable`.
-7. `save` then `copy` of the same image: pasteboard PNG bytes equal the file bytes.
+3. `copy` TIFF resolves on read to the original pixel dimensions at `size == pixels / scale`.
+4. `copy` twice: only the second shot is present, `changeCount` advanced, one item.
+5. `save` into a missing nested folder creates it and returns a file that decodes to identical pixels.
+6. `save` twice with the same fixed clock yields `... .png` and `... (2).png`, both present, the first unchanged.
+7. `save` where `folder` sits under a read-only directory throws `folderUnavailable`.
+8. `save` then `copy` of the same image: pasteboard PNG bytes equal the file bytes.
 
 ## Trade-offs
 
 - **Depth.** Two methods with two parameters each hide type negotiation, DPI, two encoders, naming, folder creation and race-free collision handling. Deleting the module would spread pasteboard type knowledge into the editor and file naming into the shell.
-- **Eager TIFF.** Costs an extra encode, 190 ms at 5K with LZW. Raw TIFF encodes in 20 ms but puts 56 MB on the pasteboard. Lazy provision via `declareTypes(owner:)` would force the module to retain the image until the pasteboard changes. Eager LZW keeps the invariant simple: nothing but the last PNG is retained.
+- **Promised TIFF.** Eager LZW costs an extra encode, 190 ms at 5K, on every copy, before the preview appears. Raw TIFF encodes in 20 ms but puts 56 MB on the pasteboard. Promising it instead keeps the last copied image alive until a reader asks or the pasteboard changes. Quitting normally encodes it first. A crash before any read leaves the TIFF type holding empty data, while the PNG, which nearly every reader takes, stays intact.
 - **Synchronous.** Guarantees the paste target sees the data the instant the editor closes. The cost is a short main-thread stall on huge shots. An async variant would need a "copy pending" state in the shell for no user-visible gain.
 - **Confirmation lives in the shell.** `copy` needs none, the editor closing is the feedback. `save` returns the URL and the shell shows a brief HUD. A `UNUserNotification` would add a permission prompt and Notification Center clutter for a rarely used path. Keeping UI out keeps the module testable without a window.
 

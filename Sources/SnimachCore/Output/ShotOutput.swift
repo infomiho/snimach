@@ -52,17 +52,18 @@ public final class ShotOutput {
     }
 
     /// Replaces the pasteboard contents with the shot. Previous contents are gone even on failure.
+    /// The PNG is written at once. The TIFF, for readers that skip PNG, costs about twice as
+    /// much to encode, so it is promised and encoded on the first read. The pasteboard keeps the
+    /// promise alive until then.
     public func copy(_ image: CGImage, scale: CGFloat) throws {
         pasteboard.clearContents()
 
         let png = try encodePNG(image, scale: scale)
-        guard let tiff = encodeTIFF(image, scale: scale) else {
-            throw ShotOutputError.encodingFailed
-        }
+        let promise = TIFFPromise(image: image, scale: scale)
 
         let item = NSPasteboardItem()
         item.setData(png, forType: .png)
-        item.setData(tiff, forType: .tiff)
+        item.setDataProvider(promise, forTypes: [.tiff])
         pasteboard.writeObjects([item])
     }
 
@@ -146,14 +147,6 @@ public final class ShotOutput {
         return result
     }
 
-    private func encodeTIFF(_ image: CGImage, scale: CGFloat) -> Data? {
-        let rep = NSBitmapImageRep(cgImage: image)
-        rep.size = NSSize(
-            width: CGFloat(image.width) / scale,
-            height: CGFloat(image.height) / scale
-        )
-        return rep.tiffRepresentation(using: .lzw, factor: 0)
-    }
 
     private static func filenameBase(_ date: Date) -> String {
         "Snimach \(filenameDateFormatter.string(from: date))"
@@ -169,5 +162,27 @@ public final class ShotOutput {
 
     private static func filename(base: String, attempt: Int) -> String {
         attempt == 0 ? "\(base).png" : "\(base) (\(attempt + 1)).png"
+    }
+}
+
+private final class TIFFPromise: NSObject, NSPasteboardItemDataProvider {
+    private let image: CGImage
+    private let scale: CGFloat
+
+    init(image: CGImage, scale: CGFloat) {
+        self.image = image
+        self.scale = scale
+    }
+
+    func pasteboard(_ pasteboard: NSPasteboard?,
+                    item: NSPasteboardItem,
+                    provideDataForType type: NSPasteboard.PasteboardType) {
+        let rep = NSBitmapImageRep(cgImage: image)
+        rep.size = NSSize(
+            width: CGFloat(image.width) / scale,
+            height: CGFloat(image.height) / scale
+        )
+        guard let tiff = rep.tiffRepresentation(using: .lzw, factor: 0) else { return }
+        item.setData(tiff, forType: type)
     }
 }
