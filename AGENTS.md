@@ -33,3 +33,7 @@ Installed copies read `https://github.com/infomiho/snimach/releases/latest/downl
 ## Web
 
 `web/` is a separate Rust crate that serves the landing page and release notes at `snimach.miho.dev`. See `web/AGENTS.md`. Validate with `cargo fmt --manifest-path web/Cargo.toml -- --check`, `cargo clippy --manifest-path web/Cargo.toml --all-targets -- -D warnings`, and `cargo test --manifest-path web/Cargo.toml`.
+
+## Promo
+
+`promo/` is a [HyperFrames](https://github.com/heygen-com/hyperframes) composition for the promo video: the whole piece is `promo/index.html`, timed on the music's beat grid (`beat(n)`). Validate with `npx hyperframes lint` and render with `npm run render` inside `promo/`. The music track is not committed: put it at `promo/assets/audio/medicine.mp3`. Renders go to `promo/renders/`, which is gitignored.

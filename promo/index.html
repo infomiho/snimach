@@ -1,0 +1,1851 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: "JetBrains Mono";
+        src: url("assets/fonts/jetbrains-mono-400.woff2") format("woff2");
+        font-weight: 400;
+      }
+
+      @font-face {
+        font-family: "JetBrains Mono";
+        src: url("assets/fonts/jetbrains-mono-700.woff2") format("woff2");
+        font-weight: 700;
+      }
+      :root {
+        --accent: #e8502a;
+        --ink: #1a1a1a;
+        --paper: #edeae4;
+        --night: #1f1e1d;
+        --muted: #706b63;
+        --line: #e3ded8;
+        --window: #ffffff;
+        --titlebar: #f4f2ee;
+        --separator: rgb(0 0 0 / 0.12);
+        --dim: rgb(0 0 0 / 0.4);
+        --hud: rgb(0 0 0 / 0.8);
+        --font-sans: system-ui, sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+        --radius-card: 10px;
+        --shadow-window: 0 30px 80px rgb(0 0 0 / 0.28), 0 0 0 1px rgb(0 0 0 / 0.1);
+        --ease-ui: cubic-bezier(0.2, 0, 0, 1);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #000;
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      #root {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+      }
+
+      #stage {
+        position: absolute;
+        inset: 0;
+      }
+
+      #world {
+        position: absolute;
+        inset: 0;
+        transform-origin: 0 0;
+      }
+
+      .layer {
+        position: absolute;
+        inset: 0;
+      }
+
+      .icon {
+        display: block;
+        width: 22px;
+        height: 22px;
+        background: currentColor;
+        mask: var(--src) center / contain no-repeat;
+      }
+
+      /* Desktop */
+
+      #wallpaper {
+        background: url("assets/wallpaper.webp") center / cover;
+      }
+
+      #menubar {
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        padding: 0 22px;
+        background: rgb(255 255 255 / 0.55);
+        backdrop-filter: blur(20px);
+        color: var(--ink);
+        font-size: 16px;
+        font-weight: 500;
+      }
+
+      #menubar .app-name {
+        font-weight: 700;
+      }
+
+      #menubar .spacer {
+        flex: 1;
+      }
+
+      #menubar .mark {
+        width: 24px;
+        height: 24px;
+        background: url("assets/menubar.svg") center / contain no-repeat;
+      }
+
+      .window {
+        position: absolute;
+        background: var(--window);
+        border-radius: 14px;
+        box-shadow: var(--shadow-window);
+        overflow: hidden;
+      }
+
+      .titlebar {
+        height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 20px;
+        background: var(--titlebar);
+        border-bottom: 1px solid var(--separator);
+        color: var(--ink);
+        font-size: 17px;
+        font-weight: 600;
+      }
+
+      .lights {
+        display: flex;
+        gap: 9px;
+      }
+
+      .lights span {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #ff5f57;
+      }
+
+      .lights span:nth-child(2) {
+        background: #febc2e;
+      }
+
+      .lights span:nth-child(3) {
+        background: #28c840;
+      }
+
+      .titlebar .title {
+        flex: 1;
+        text-align: center;
+        margin-right: 62px;
+      }
+
+      /* The app being captured */
+
+      #app {
+        left: 360px;
+        top: 150px;
+        width: 1200px;
+        height: 780px;
+      }
+
+      .dash {
+        position: relative;
+        height: 728px;
+        padding: 36px 48px;
+        color: var(--ink);
+        background: #fbfaf8;
+      }
+
+      .dash .eyebrow {
+        font-size: 19px;
+        color: var(--muted);
+      }
+
+      .dash .headline {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-top: 6px;
+      }
+
+      .dash .amount {
+        font-size: 60px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .dash .delta {
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: #fde8e3;
+        color: #c2401c;
+        font-size: 19px;
+        font-weight: 600;
+      }
+
+      .card {
+        position: absolute;
+        left: 48px;
+        width: 1104px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+      }
+
+      .chart-card {
+        top: 170px;
+        height: 300px;
+      }
+
+      .chart-card svg {
+        display: block;
+      }
+
+      .settings-card {
+        top: 500px;
+        height: 190px;
+        padding: 18px 28px;
+      }
+
+      .settings-card h3 {
+        font-size: 19px;
+        font-weight: 650;
+        margin-bottom: 8px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        height: 44px;
+        border-top: 1px solid var(--line);
+        font-size: 19px;
+      }
+
+      .row .key {
+        width: 332px;
+        color: var(--muted);
+      }
+
+      .row .value {
+        font-family: var(--font-mono);
+        font-size: 20px;
+      }
+
+      .row .off {
+        color: #c2401c;
+        font-family: var(--font-sans);
+        font-weight: 600;
+      }
+
+      /* Capture overlay */
+
+      #dim {
+        background: var(--dim);
+        opacity: 0;
+      }
+
+      .guide {
+        position: absolute;
+        background: rgb(255 255 255 / 0.6);
+        opacity: 0;
+      }
+
+      #guide-h {
+        left: 0;
+        width: 1920px;
+        height: 1px;
+      }
+
+      #guide-v {
+        top: 0;
+        width: 1px;
+        height: 1080px;
+      }
+
+      #selection {
+        position: absolute;
+        left: 392px;
+        top: 226px;
+        width: 0;
+        height: 0;
+        border: 1px solid #fff;
+        box-shadow: 0 0 0 4000px var(--dim);
+        opacity: 0;
+      }
+
+      #size-label {
+        position: absolute;
+        left: 392px;
+        top: 200px;
+        padding: 1px 3px;
+        background: rgb(0 0 0 / 0.7);
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        opacity: 0;
+      }
+
+      #hint {
+        position: absolute;
+        top: 104px;
+        left: 0;
+        width: 1920px;
+        display: flex;
+        justify-content: center;
+        opacity: 0;
+      }
+
+      #hint span {
+        padding: 9px 22px;
+        border-radius: 999px;
+        background: rgb(0 0 0 / 0.72);
+        color: #fff;
+        font-size: 17px;
+        font-weight: 500;
+        white-space: pre;
+      }
+
+      #focus-dim {
+        background: rgb(0 0 0 / 0.35);
+        opacity: 0;
+      }
+
+      #flash {
+        background: #fff;
+        opacity: 0;
+      }
+
+      /* Preview card */
+
+      #preview {
+        position: absolute;
+        left: 1664px;
+        top: 888px;
+        width: 240px;
+        height: 176px;
+        border-radius: var(--radius-card);
+        background: #fff;
+        border: 1px solid var(--separator);
+        box-shadow: 0 16px 40px rgb(0 0 0 / 0.3);
+        overflow: hidden;
+        opacity: 0;
+      }
+
+      #thumb {
+        position: relative;
+        width: 240px;
+        height: 142px;
+        overflow: hidden;
+      }
+
+      #thumb-inner {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1136px;
+        height: 674px;
+        transform: scale(0.2113);
+        transform-origin: 0 0;
+      }
+
+      .preview-footer {
+        height: 34px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-top: 1px solid var(--separator);
+        color: #3a3a3a;
+      }
+
+      .preview-footer .slot {
+        width: 44px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .preview-footer .icon {
+        width: 15px;
+        height: 15px;
+      }
+
+      /* Editor */
+
+      #editor {
+        left: 481px;
+        top: 185px;
+        width: 957px;
+        height: 709px;
+        background: #f2f0ec;
+        opacity: 0;
+      }
+
+      #editor .titlebar .title {
+        margin-right: 0;
+      }
+
+      .toolbar-button {
+        width: 38px;
+        height: 32px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 7px;
+        color: #2a2a2a;
+      }
+
+      #canvas {
+        position: absolute;
+        left: 24px;
+        top: 76px;
+        width: 909px;
+        height: 539px;
+        border-radius: var(--radius-card);
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 0 0 1px var(--separator);
+      }
+
+      #shot-frame {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background: #fff;
+      }
+
+      #shot-inner {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1136px;
+        height: 674px;
+        transform: scale(0.8);
+        transform-origin: 0 0;
+      }
+
+      .shot-clone {
+        position: absolute;
+        left: -32px;
+        top: -76px;
+        width: 1200px;
+        height: 780px;
+      }
+
+      .annotations {
+        position: absolute;
+        inset: 0;
+        overflow: visible;
+      }
+
+      #mosaic {
+        position: absolute;
+        left: 368px;
+        top: 586px;
+        width: 152px;
+        height: 32px;
+        image-rendering: pixelated;
+      }
+
+      #bar {
+        position: absolute;
+        left: 50%;
+        bottom: 32px;
+        height: 46px;
+        margin-left: -224px;
+        width: 448px;
+        display: flex;
+        align-items: center;
+        gap: 1px;
+        padding: 8px;
+        border-radius: 23px;
+        background: rgb(38 38 38 / 0.86);
+        box-shadow: 0 4px 16px rgb(0 0 0 / 0.3), 0 0 0 1px rgb(255 255 255 / 0.08);
+        color: #f2f2f2;
+      }
+
+      .bar-button {
+        position: relative;
+        width: 34px;
+        height: 30px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .bar-button .active,
+      .toolbar-button .active {
+        position: absolute;
+        inset: 0;
+        border-radius: 7px;
+        background: rgb(255 255 255 / 0.16);
+        opacity: 0;
+      }
+
+      .bar-button .icon {
+        position: relative;
+        width: 19px;
+        height: 19px;
+      }
+
+      .bar-sep {
+        width: 1px;
+        height: 20px;
+        margin: 0 8px;
+        background: rgb(255 255 255 / 0.18);
+      }
+
+      .backdrop-button {
+        position: relative;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px 0 8px;
+        border-radius: 7px;
+        background: rgb(255 255 255 / 0.04);
+        font-size: 15px;
+      }
+
+      .backdrop-button .swatch {
+        position: relative;
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        background: linear-gradient(45deg, #dbeafe, #93c5fd 55%, #3b82f6);
+      }
+
+      .backdrop-button .icon {
+        position: relative;
+        width: 14px;
+        height: 14px;
+      }
+
+      .backdrop-button span {
+        position: relative;
+      }
+
+      /* Cursors */
+
+      #cursor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 0;
+        height: 0;
+      }
+
+      #cursor svg {
+        position: absolute;
+        overflow: visible;
+      }
+
+      #cursor-arrow {
+        left: -3px;
+        top: -3px;
+      }
+
+      #cursor-cross {
+        left: -14px;
+        top: -14px;
+        opacity: 0;
+      }
+
+      /* Overlays that stay put while the camera moves */
+
+      #keys {
+        position: absolute;
+        left: 0;
+        bottom: 84px;
+        width: 1920px;
+        height: 98px;
+        display: flex;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .combo {
+        position: absolute;
+        display: flex;
+        gap: 14px;
+      }
+
+      .keycap {
+        min-width: 92px;
+        height: 92px;
+        padding: 0 22px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 20px;
+        background: var(--paper);
+        color: var(--ink);
+        font-size: 44px;
+        font-weight: 600;
+        box-shadow: 0 6px 0 #c9c4bb, 0 18px 40px rgb(0 0 0 / 0.35);
+        opacity: 0;
+      }
+
+      .combo .keycap.accent {
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 6px 0 #b83a1a, 0 18px 40px rgb(0 0 0 / 0.35);
+      }
+
+      #endcard {
+        background: var(--paper);
+        clip-path: circle(0px at 960px 540px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: var(--ink);
+      }
+
+      #end-icon {
+        width: 230px;
+        height: 230px;
+        background: url("assets/appicon.svg") center / 125% no-repeat;
+        filter: drop-shadow(0 18px 30px rgb(26 26 26 / 0.18));
+      }
+
+      #end-name {
+        margin-top: 18px;
+        font-size: 104px;
+        font-weight: 750;
+        letter-spacing: -0.035em;
+      }
+
+      #end-tagline {
+        margin-top: 4px;
+        font-size: 38px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+
+      #end-url {
+        margin-top: 34px;
+        font-size: 30px;
+        font-weight: 650;
+        color: var(--accent);
+      }
+    
+      /* The agent terminal that opens and closes the story, styled after coding-agent CLIs */
+
+      #agent-scene {
+        --term-bg: #1f1e1d;
+        --term-text: #ebe8e2;
+        --term-dim: #8c877e;
+        --term-accent: #d97757;
+        --term-border: #5b5750;
+        --diff-del-bg: #4a2323;
+        --diff-del-text: #ffb3ad;
+        --diff-add-bg: #1d4128;
+        --diff-add-text: #b4efc2;
+
+        background: var(--term-bg);
+        overflow: hidden;
+      }
+
+      #agent-world {
+        position: absolute;
+        inset: 0;
+        transform-origin: 0 0;
+        font-family: var(--font-mono);
+        font-size: 30px;
+        line-height: 1.5;
+        color: var(--term-text);
+      }
+
+      .term {
+        position: absolute;
+        left: 150px;
+        right: 300px;
+        top: 230px;
+        display: flex;
+        flex-direction: column;
+        gap: 26px;
+      }
+
+      .term-line {
+        position: relative;
+        display: flex;
+        gap: 18px;
+      }
+
+      .term-line .glyph {
+        flex: none;
+        width: 30px;
+      }
+
+      .term-line.user {
+        color: var(--term-dim);
+      }
+
+      .term-line.agent .glyph {
+        color: var(--term-text);
+      }
+
+      .term-line.tool .glyph {
+        color: #7fd18b;
+      }
+
+      .term-line b {
+        font-weight: 700;
+      }
+
+      .term-result {
+        color: var(--term-dim);
+        padding-left: 12px;
+      }
+
+      .diff {
+        display: block;
+        padding: 0 14px;
+      }
+
+      .diff.del {
+        background: var(--diff-del-bg);
+        color: var(--diff-del-text);
+      }
+
+      .diff.add {
+        background: var(--diff-add-bg);
+        color: var(--diff-add-text);
+      }
+
+      .later {
+        opacity: 0;
+      }
+
+      #spinner {
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: var(--term-accent);
+        opacity: 0;
+      }
+
+      #spinner .star {
+        display: inline-block;
+      }
+
+      #spinner .dim {
+        color: var(--term-dim);
+      }
+
+      .image-token {
+        color: #9fb7ff;
+      }
+
+      .input-box {
+        position: absolute;
+        left: 120px;
+        right: 120px;
+        top: 850px;
+        height: 84px;
+        display: flex;
+        align-items: center;
+        padding: 0 30px;
+        border: 2px solid var(--term-border);
+        border-radius: 14px;
+      }
+
+      .input-box .glyph {
+        margin-right: 18px;
+        color: var(--term-text);
+      }
+
+      .typing {
+        display: inline-block;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      #input-token {
+        display: none;
+        white-space: pre;
+      }
+
+      .block-caret {
+        width: 17px;
+        height: 36px;
+        background: var(--term-text);
+      }
+
+      .shortcut-hint {
+        position: absolute;
+        left: 150px;
+        top: 948px;
+        font-size: 22px;
+        color: var(--term-dim);
+      }
+
+      .typed span {
+        opacity: 0;
+      }
+
+      #paste-image {
+        position: absolute;
+        left: 720px;
+        top: 440px;
+        width: 480px;
+        height: 285px;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 30px 80px rgb(0 0 0 / 0.55), 0 0 0 2px rgb(255 255 255 / 0.15);
+        font-family: var(--font-sans);
+        line-height: normal;
+        opacity: 0;
+      }
+
+      #chip-inner {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1136px;
+        height: 674px;
+        transform: scale(0.4225);
+        transform-origin: 0 0;
+      }
+
+      .slide {
+        background: var(--paper);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 44px;
+        opacity: 0;
+      }
+
+      .slide-text {
+        font-family: var(--font-sans);
+        font-size: 118px;
+        font-weight: 750;
+        letter-spacing: -0.04em;
+        color: var(--ink);
+        text-align: center;
+        max-width: 1500px;
+        line-height: 1.05;
+      }
+
+      #slide-blind {
+        background: var(--night);
+      }
+
+      #slide-blind .slide-text {
+        color: var(--paper);
+      }
+
+      /* Googly eyes: a white backing under a clear dome, with a loose pupil. */
+
+      #slide-eyes-pair,
+      #end-icon,
+      #end-name,
+      #end-tagline,
+      #end-url {
+        opacity: 0;
+      }
+
+      .googly {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .eye {
+        position: relative;
+        display: block;
+        width: 170px;
+        height: 170px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 40% 36%, #ffffff 0 52%, #f2f1ee 68%, #d9d7d2 100%);
+        box-shadow:
+          0 0 0 5px rgb(255 255 255 / 0.75),
+          0 0 0 7px rgb(26 26 26 / 0.18),
+          0 16px 30px rgb(26 26 26 / 0.3),
+          inset 0 -10px 18px rgb(0 0 0 / 0.12);
+      }
+
+      .eye.big {
+        width: 196px;
+        height: 196px;
+      }
+
+      .eye::after {
+        content: "";
+        position: absolute;
+        left: 20%;
+        top: 13%;
+        width: 30%;
+        height: 18%;
+        border-radius: 50%;
+        background: rgb(255 255 255 / 0.85);
+        transform: rotate(-30deg);
+        filter: blur(1px);
+      }
+
+      .pupil {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 44%;
+        height: 44%;
+        margin: -22% 0 0 -22%;
+        border-radius: 50%;
+        background: radial-gradient(circle at 34% 30%, #4a4a4a 0 8%, #121212 30%, #050505 100%);
+      }
+
+      #end-sub {
+        margin-top: 10px;
+        font-size: 30px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="17.6"
+      data-width="1920"
+      data-height="1080"
+    >
+      <audio
+        id="music"
+        src="assets/audio/medicine.mp3"
+        data-start="0"
+        data-duration="17.6"
+        data-media-start="18.988"
+        data-volume="0.35"
+        data-fade-out="1"
+        data-track-index="1"
+      ></audio>
+      <div id="stage" class="clip" data-start="0" data-duration="17.6" data-track-index="0">
+        <div id="world">
+          <div id="wallpaper" class="layer"></div>
+
+          <div id="menubar">
+            <span class="app-name">Acme</span>
+            <span>File</span>
+            <span>Edit</span>
+            <span>View</span>
+            <span>Window</span>
+            <span class="spacer"></span>
+            <span class="mark"></span>
+            <span>Thu 24 Sep 9:41</span>
+          </div>
+
+          <div id="app" class="window">
+            <div class="titlebar">
+              <div class="lights"><span></span><span></span><span></span></div>
+              <div class="title">Acme Dashboard</div>
+            </div>
+            <div class="dash">
+              <div class="eyebrow">Revenue this week</div>
+              <div class="headline">
+                <div class="amount">$48,210</div>
+                <div class="delta">▼ 12% since Monday</div>
+              </div>
+              <div class="card chart-card">
+                <svg class="chart" width="1104" height="300" viewBox="0 0 1104 300">
+                  <defs>
+                    <linearGradient id="area-fill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="#e8502a" stop-opacity="0.18" />
+                      <stop offset="1" stop-color="#e8502a" stop-opacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <g stroke="#efebe6" stroke-width="1">
+                    <line x1="40" y1="60" x2="1064" y2="60" />
+                    <line x1="40" y1="130" x2="1064" y2="130" />
+                    <line x1="40" y1="200" x2="1064" y2="200" />
+                  </g>
+                  <path
+                    d="M40,110 L210.7,90 L381.3,100 L552,225 L722.7,80 L893.3,70 L1064,55 L1064,250 L40,250 Z"
+                    fill="url(#area-fill)"
+                  />
+                  <polyline
+                    points="40,110 210.7,90 381.3,100 552,225 722.7,80 893.3,70 1064,55"
+                    fill="none"
+                    stroke="#1a1a1a"
+                    stroke-width="4"
+                    stroke-linejoin="round"
+                    stroke-linecap="round"
+                  />
+                  <circle cx="552" cy="225" r="8" fill="#fff" stroke="#1a1a1a" stroke-width="4" />
+                  <g fill="#8f8a81" font-size="17" text-anchor="middle" font-family="system-ui, sans-serif">
+                    <text x="40" y="284">Mon</text>
+                    <text x="210.7" y="284">Tue</text>
+                    <text x="381.3" y="284">Wed</text>
+                    <text x="552" y="284">Thu</text>
+                    <text x="722.7" y="284">Fri</text>
+                    <text x="893.3" y="284">Sat</text>
+                    <text x="1064" y="284">Sun</text>
+                  </g>
+                </svg>
+              </div>
+              <div class="card settings-card">
+                <h3>Team settings</h3>
+                <div class="row"><span class="key">Workspace</span><span class="value">acme-prod</span></div>
+                <div class="row">
+                  <span class="key">Admin password</span><span class="value secret">sixseven67</span>
+                </div>
+                <div class="row"><span class="key">Two-factor</span><span class="value off">Off</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="dim" class="layer"></div>
+          <div id="guide-h" class="guide"></div>
+          <div id="guide-v" class="guide"></div>
+          <div id="selection"></div>
+          <div id="size-label"><span id="size-w">0</span> x <span id="size-h">0</span></div>
+          <div id="hint"><span>Drag to select    Click a window    Esc to cancel</span></div>
+          <div id="flash" class="layer"></div>
+
+          <div id="preview">
+            <div id="thumb"><div id="thumb-inner"></div></div>
+            <div class="preview-footer">
+              <div class="slot"><i class="icon" style="--src: url(assets/icons/pen-linear.svg)"></i></div>
+              <div class="slot"><i class="icon" style="--src: url(assets/icons/diskette-linear.svg)"></i></div>
+              <div class="slot"><i class="icon" style="--src: url(assets/icons/close-circle-linear.svg)"></i></div>
+            </div>
+          </div>
+
+          <div id="focus-dim" class="layer"></div>
+
+          <div id="editor" class="window">
+            <div class="titlebar">
+              <div class="lights"><span></span><span></span><span></span></div>
+              <div class="title">Snimach</div>
+              <div class="toolbar-button"><i class="icon" style="--src: url(assets/icons/diskette-linear.svg)"></i></div>
+              <div id="copy-button" class="toolbar-button">
+                <div class="active"></div>
+                <i class="icon" style="--src: url(assets/icons/copy-linear.svg)"></i>
+              </div>
+            </div>
+            <div id="canvas">
+              <div id="shot-frame">
+                <div id="shot-inner">
+                  <canvas id="mosaic"></canvas>
+                  <svg class="annotations" viewBox="0 0 1136 674" width="1136" height="674">
+                    <line class="arrow-shaft" stroke="#e8502a" stroke-width="7" stroke-linecap="round" />
+                    <polygon class="arrow-head" fill="#e8502a" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div id="bar">
+              <div id="tool-arrow" class="bar-button">
+                <div class="active"></div>
+                <i class="icon" style="--src: url(assets/icons/arrow-right-up-linear.svg)"></i>
+              </div>
+              <div class="bar-button"><i class="icon" style="--src: url(assets/icons/hashtag-linear.svg)"></i></div>
+              <div class="bar-button"><i class="icon" style="--src: url(assets/icons/stop-linear.svg)"></i></div>
+              <div id="tool-redact" class="bar-button">
+                <div class="active"></div>
+                <i class="icon" style="--src: url(assets/icons/redact.svg)"></i>
+              </div>
+              <div class="bar-sep"></div>
+              <div class="bar-button"><i class="icon" style="--src: url(assets/icons/undo-left-linear.svg)"></i></div>
+              <div class="bar-button"><i class="icon" style="--src: url(assets/icons/undo-right-linear.svg)"></i></div>
+              <div class="bar-sep"></div>
+              <div class="backdrop-button">
+                <span class="swatch"></span>
+                <span>Backdrop</span>
+                <i class="icon" style="--src: url(assets/icons/alt-arrow-up-linear.svg)"></i>
+              </div>
+              <div class="bar-button"><i class="icon" style="--src: url(assets/icons/pipette-linear.svg)"></i></div>
+            </div>
+          </div>
+
+          <div id="cursor">
+            <svg id="cursor-arrow" width="30" height="40" viewBox="0 0 30 40">
+              <path
+                d="M3 3 L3 30 L10 23.5 L15 34 L19.5 32 L14.5 21.5 L24 21.5 Z"
+                fill="#000"
+                stroke="#fff"
+                stroke-width="2"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <svg id="cursor-cross" width="28" height="28" viewBox="0 0 28 28">
+              <path d="M14 1 V27 M1 14 H27" stroke="#fff" stroke-width="4" />
+              <path d="M14 1 V27 M1 14 H27" stroke="#000" stroke-width="1.6" />
+            </svg>
+          </div>
+        </div>
+
+        <div id="agent-scene" class="layer">
+          <div id="agent-world">
+            <div class="term">
+              <div id="msg-first" class="term-line user later">
+                <span class="glyph">&gt;</span><span>the chart looks wrong on thursday, fix it</span>
+              </div>
+              <div id="reply-before-line" class="term-line agent later">
+                <span class="glyph">⏺</span>
+                <span id="reply-before" class="typed">I can't see your screen. Which chart? What looks wrong?</span>
+              </div>
+              <div id="msg-image" class="term-line user later">
+                <span class="glyph">&gt;</span><span><span class="image-token">[Image #1]</span> look at thursday</span>
+              </div>
+              <div class="term-line tool">
+                <span id="spinner"><span class="star">✻</span> Looking at your screenshot… <span class="dim">(esc to interrupt)</span></span>
+                <span class="glyph later tool-read">⏺</span>
+                <span class="later tool-read">
+                  <b>Read</b>(src/stats/weekly.ts)
+                  <span class="term-result">⎿  Read 48 lines</span>
+                </span>
+              </div>
+              <div class="term-line agent">
+                <span class="glyph later reply-glyph">⏺</span>
+                <span id="reply-after" class="typed">Oh, I see it now. Your arrow's on Thursday's dip: orders get bucketed in UTC, so late Thursday sales end up on Friday.</span>
+              </div>
+              <div class="term-line tool later tool-update">
+                <span class="glyph">⏺</span>
+                <span>
+                  <b>Update</b>(src/stats/weekly.ts)
+                  <span class="diff del">- bucket(order.createdAt)</span>
+                  <span class="diff add">+ bucket(order.createdAt, store.timezone)</span>
+                </span>
+              </div>
+            </div>
+            <div class="input-box">
+              <span class="glyph">&gt;</span>
+              <span id="input-first" class="typing">the chart looks wrong on thursday, fix it</span>
+              <span id="input-token" class="image-token">[Image #1]&nbsp;</span>
+              <span id="input-typed" class="typing">look at thursday</span>
+              <span class="block-caret"></span>
+            </div>
+            <div class="shortcut-hint">? for shortcuts</div>
+          </div>
+          <div id="paste-image"><div id="chip-inner"></div></div>
+        </div>
+
+        <div id="keys">
+          <div id="combo-capture" class="combo">
+            <div class="keycap">⇧</div>
+            <div class="keycap">⌘</div>
+            <div class="keycap accent">A</div>
+          </div>
+          <div id="combo-arrow" class="combo"><div class="keycap accent">A</div></div>
+          <div id="combo-redact" class="combo"><div class="keycap accent">B</div></div>
+          <div id="combo-copy" class="combo">
+            <div class="keycap">⌘</div>
+            <div class="keycap accent">C</div>
+          </div>
+          <div id="combo-paste" class="combo">
+            <div class="keycap">⌘</div>
+            <div class="keycap accent">V</div>
+          </div>
+        </div>
+
+        <div id="slide-blind" class="layer slide">
+          <div class="slide-text">your agent can't see your screen lol</div>
+        </div>
+
+        <div id="slide-eyes" class="layer slide">
+          <div class="slide-text">give it eyes</div>
+          <span id="slide-eyes-pair" class="googly">
+            <span class="eye"><span class="pupil"></span></span>
+            <span class="eye big"><span class="pupil"></span></span>
+          </span>
+        </div>
+
+        <div id="endcard" class="layer">
+          <div id="end-icon"></div>
+          <div id="end-name">Snimach</div>
+          <div id="end-tagline">Open source macOS screenshot tool</div>
+          <div id="end-url">snimach.miho.dev</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const W = 1920;
+      const H = 1080;
+
+      // The captured region in screen coordinates, and where the editor shows it.
+      const SHOT = { x: 392, y: 226, w: 1136, h: 674 };
+      const CANVAS = { x: 481 + 24, y: 185 + 76, scale: 0.8 };
+      const ARROW_HEAD = 26;
+      const DIP_CLEARANCE = 18;
+      const MOSAIC_CELL = 8;
+
+      const $ = (selector) => document.querySelector(selector);
+
+      // Layout-space offset of an element inside an ancestor, ignoring any transforms.
+      function offsetWithin(element, ancestor) {
+        let x = 0;
+        let y = 0;
+        let node = element;
+        while (node && node !== ancestor) {
+          x += node.offsetLeft;
+          y += node.offsetTop;
+          node = node.offsetParent;
+          if (node && node !== ancestor) {
+            x += node.clientLeft;
+            y += node.clientTop;
+          }
+        }
+        return { x, y };
+      }
+
+      // Converts a point inside the app window to the captured shot's coordinates.
+      function appToShot(point) {
+        const app = $("#app");
+        return {
+          x: point.x + app.offsetLeft - SHOT.x,
+          y: point.y + app.offsetTop - SHOT.y,
+        };
+      }
+
+      function shotToWorld(point) {
+        return {
+          x: CANVAS.x + point.x * CANVAS.scale,
+          y: CANVAS.y + point.y * CANVAS.scale,
+        };
+      }
+
+      function measureTargets() {
+        const chartCard = $("#app .chart-card");
+        const dipCircle = chartCard.querySelector("circle");
+        const cardOrigin = offsetWithin(chartCard, $("#app"));
+        const chartOrigin = { x: cardOrigin.x + chartCard.clientLeft, y: cardOrigin.y + chartCard.clientTop };
+        const dip = appToShot({
+          x: chartOrigin.x + Number(dipCircle.getAttribute("cx")),
+          y: chartOrigin.y + Number(dipCircle.getAttribute("cy")),
+        });
+        const from = { x: dip.x + 300, y: dip.y - 245 };
+        const length = Math.hypot(dip.x - from.x, dip.y - from.y);
+        const to = {
+          x: dip.x - ((dip.x - from.x) / length) * DIP_CLEARANCE,
+          y: dip.y - ((dip.y - from.y) / length) * DIP_CLEARANCE,
+        };
+
+        const secret = $("#app .secret");
+        const secretOrigin = appToShot(offsetWithin(secret, $("#app")));
+        const columns = Math.ceil((secret.offsetWidth + 16) / MOSAIC_CELL);
+        const rows = Math.ceil((secret.offsetHeight + 8) / MOSAIC_CELL);
+        const redact = {
+          x: secretOrigin.x - 8,
+          y: secretOrigin.y - 4,
+          w: columns * MOSAIC_CELL,
+          h: rows * MOSAIC_CELL,
+          columns,
+          rows,
+          font: getComputedStyle(secret).font,
+        };
+
+        return { arrow: { from, to }, redact };
+      }
+
+      // Measured once fonts are ready, so text boxes are final.
+      let TARGETS;
+
+      function cloneApp(into) {
+        const clone = $("#app").cloneNode(true);
+        clone.removeAttribute("id");
+        clone.classList.add("shot-clone");
+        into.prepend(clone);
+      }
+
+      // Averages each cell of the secret's pixels, the way the editor's Hide tool does.
+      function paintMosaic() {
+        const { redact } = TARGETS;
+        const full = document.createElement("canvas");
+        full.width = redact.w;
+        full.height = redact.h;
+        const context = full.getContext("2d");
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, redact.w, redact.h);
+        context.fillStyle = "#1a1a1a";
+        context.font = redact.font;
+        context.textBaseline = "middle";
+        context.fillText($("#app .secret").textContent, 8, redact.h / 2);
+
+        const mosaic = $("#mosaic");
+        mosaic.width = redact.columns;
+        mosaic.height = redact.rows;
+        Object.assign(mosaic.style, {
+          left: `${redact.x}px`,
+          top: `${redact.y}px`,
+          width: `${redact.w}px`,
+          height: `${redact.h}px`,
+        });
+
+        const source = context.getImageData(0, 0, redact.w, redact.h).data;
+        const cells = mosaic.getContext("2d").createImageData(redact.columns, redact.rows);
+        for (let row = 0; row < redact.rows; row++) {
+          for (let column = 0; column < redact.columns; column++) {
+            const sum = [0, 0, 0];
+            for (let y = row * MOSAIC_CELL; y < (row + 1) * MOSAIC_CELL; y++) {
+              for (let x = column * MOSAIC_CELL; x < (column + 1) * MOSAIC_CELL; x++) {
+                const i = (y * redact.w + x) * 4;
+                sum[0] += source[i];
+                sum[1] += source[i + 1];
+                sum[2] += source[i + 2];
+              }
+            }
+            const o = (row * redact.columns + column) * 4;
+            const area = MOSAIC_CELL * MOSAIC_CELL;
+            cells.data[o] = sum[0] / area;
+            cells.data[o + 1] = sum[1] / area;
+            cells.data[o + 2] = sum[2] / area;
+            cells.data[o + 3] = 255;
+          }
+        }
+        mosaic.getContext("2d").putImageData(cells, 0, 0);
+      }
+
+      function drawArrow(svg, progress) {
+        const { from, to } = TARGETS.arrow;
+        const length = Math.hypot(to.x - from.x, to.y - from.y);
+        const ux = (to.x - from.x) / length;
+        const uy = (to.y - from.y) / length;
+        const drawn = Math.max(progress * length, 0.001);
+        const tipX = from.x + ux * drawn;
+        const tipY = from.y + uy * drawn;
+        const headLength = Math.min(ARROW_HEAD, drawn);
+        const halfWidth = headLength * Math.tan(Math.PI / 7);
+        const baseX = tipX - ux * headLength;
+        const baseY = tipY - uy * headLength;
+
+        const shaft = svg.querySelector(".arrow-shaft");
+        shaft.setAttribute("x1", from.x);
+        shaft.setAttribute("y1", from.y);
+        shaft.setAttribute("x2", baseX);
+        shaft.setAttribute("y2", baseY);
+        svg.style.opacity = progress > 0 ? 1 : 0;
+
+        const corners = [
+          [tipX, tipY],
+          [baseX - uy * halfWidth, baseY + ux * halfWidth],
+          [baseX + uy * halfWidth, baseY - ux * halfWidth],
+        ];
+        svg.querySelector(".arrow-head").setAttribute("points", corners.map((c) => c.join(",")).join(" "));
+      }
+
+      // The finished, annotated shot, as it lands in the agent's prompt.
+      function buildAttachment() {
+        const chip = $("#chip-inner");
+        cloneApp(chip);
+        const annotations = $("#shot-inner .annotations").cloneNode(true);
+        chip.append(annotations);
+        drawArrow(annotations, 1);
+        const mosaic = document.createElement("canvas");
+        mosaic.width = $("#mosaic").width;
+        mosaic.height = $("#mosaic").height;
+        mosaic.getContext("2d").drawImage($("#mosaic"), 0, 0);
+        mosaic.style.cssText = $("#mosaic").style.cssText;
+        mosaic.style.position = "absolute";
+        mosaic.style.imageRendering = "pixelated";
+        chip.append(mosaic);
+      }
+
+      function splitIntoCharacters(element) {
+        const text = element.textContent;
+        element.textContent = "";
+        for (const character of text) {
+          const span = document.createElement("span");
+          span.textContent = character;
+          element.append(span);
+        }
+      }
+
+      // Everything that moves continuously lives in these objects. GSAP tweens them and
+      // render() is the single writer that turns them into styles.
+      const clock = { t: 0 };
+      const pointer = { x: 0, y: 0, cross: 0 };
+      const selection = { w: 0, h: 0 };
+      const arrow = { progress: 0 };
+      const redact = { progress: 0 };
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      // Keeps a focus point far enough from the edges that the zoomed world covers the frame.
+      function clampFocus(x, y, scale) {
+        return {
+          x: clamp(x, W / (2 * scale), W - W / (2 * scale)),
+          y: clamp(y, H / (2 * scale), H - H / (2 * scale)),
+        };
+      }
+
+      // Fritsch–Carlson monotone cubic: passes through every key, never overshoots, and keeps
+      // velocity continuous across keys, so holds stay still and moves flow into each other.
+      function monotoneSpline(times, values) {
+        const n = times.length;
+        const slopes = [];
+        for (let i = 0; i < n - 1; i++) {
+          slopes.push((values[i + 1] - values[i]) / (times[i + 1] - times[i]));
+        }
+        const tangents = [slopes[0]];
+        for (let i = 1; i < n - 1; i++) {
+          tangents.push(slopes[i - 1] * slopes[i] <= 0 ? 0 : (slopes[i - 1] + slopes[i]) / 2);
+        }
+        tangents.push(slopes[n - 2]);
+        for (let i = 0; i < n - 1; i++) {
+          if (slopes[i] === 0) {
+            tangents[i] = 0;
+            tangents[i + 1] = 0;
+            continue;
+          }
+          const a = tangents[i] / slopes[i];
+          const b = tangents[i + 1] / slopes[i];
+          const magnitude = Math.hypot(a, b);
+          if (magnitude > 3) {
+            tangents[i] = (3 * a * slopes[i]) / magnitude;
+            tangents[i + 1] = (3 * b * slopes[i]) / magnitude;
+          }
+        }
+        return (t) => {
+          if (t <= times[0]) return values[0];
+          if (t >= times[n - 1]) return values[n - 1];
+          let i = 0;
+          while (t > times[i + 1]) i++;
+          const h = times[i + 1] - times[i];
+          const u = (t - times[i]) / h;
+          const u2 = u * u;
+          const u3 = u2 * u;
+          return (
+            (2 * u3 - 3 * u2 + 1) * values[i] +
+            (u3 - 2 * u2 + u) * h * tangents[i] +
+            (-2 * u3 + 3 * u2) * values[i + 1] +
+            (u3 - u2) * h * tangents[i + 1]
+          );
+        };
+      }
+
+      // keys: [time, focusX, focusY, scale]. Scale is splined in log space so zooms feel even.
+      function cameraPath(keys) {
+        const clamped = keys.map(([t, x, y, s]) => {
+          const focus = clampFocus(x, y, s);
+          return [t, focus.x, focus.y, Math.log(s)];
+        });
+        const times = clamped.map((key) => key[0]);
+        const fx = monotoneSpline(times, clamped.map((key) => key[1]));
+        const fy = monotoneSpline(times, clamped.map((key) => key[2]));
+        const logScale = monotoneSpline(times, clamped.map((key) => key[3]));
+        return (t) => ({ x: fx(t), y: fy(t), scale: Math.exp(logScale(t)) });
+      }
+
+      let cameraAt = () => ({ x: W / 2, y: H / 2, scale: 1 });
+
+      function renderCamera() {
+        const camera = cameraAt(clock.t);
+        const s = camera.scale;
+        const tx = clamp(W / 2 - camera.x * s, W - W * s, 0);
+        const ty = clamp(H / 2 - camera.y * s, H - H * s, 0);
+        $("#world").style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+      }
+
+      function renderPointer() {
+        $("#cursor").style.transform = `translate(${pointer.x}px, ${pointer.y}px)`;
+        $("#cursor-cross").style.opacity = pointer.cross;
+        $("#cursor-arrow").style.opacity = 1 - pointer.cross;
+        $("#guide-h").style.top = `${Math.round(pointer.y)}px`;
+        $("#guide-v").style.left = `${Math.round(pointer.x)}px`;
+      }
+
+      function renderSelection() {
+        $("#selection").style.width = `${selection.w}px`;
+        $("#selection").style.height = `${selection.h}px`;
+        $("#size-w").textContent = Math.round(selection.w);
+        $("#size-h").textContent = Math.round(selection.h);
+      }
+
+      function renderRedact() {
+        const hidden = (1 - redact.progress) * 100;
+        $("#mosaic").style.clipPath = `inset(0 ${hidden}% ${hidden}% 0)`;
+      }
+
+      function render() {
+        renderCamera();
+        renderAgentCamera();
+        renderGoogly();
+        renderPointer();
+        renderSelection();
+        drawArrow($("#shot-inner .annotations"), arrow.progress);
+        renderRedact();
+      }
+
+      function popKeys(tl, combo, at, hold) {
+        const keys = `${combo} .keycap`;
+        tl.fromTo(
+          keys,
+          { opacity: 0, y: 30, scale: 0.8 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.25, ease: "back.out(2.2)", stagger: 0.07 },
+          at,
+        );
+        tl.to(keys, { y: 6, duration: 0.07, ease: "power1.in", stagger: 0.07 }, at + 0.3);
+        tl.to(keys, { y: 0, duration: 0.12, ease: "power1.out", stagger: 0.07 }, at + 0.37);
+        tl.to(keys, { opacity: 0, y: -16, duration: 0.2, ease: "power2.in" }, at + hold);
+      }
+
+      function typeOut(tl, selector, at, duration) {
+        tl.to(`${selector} span`, { opacity: 1, duration: 0.01, stagger: duration / $(selector).children.length }, at);
+      }
+
+      // Music: "Medicine" from five beats before its drop at 22.39 s, so the drop lands on the
+      // "can't see your screen" slide. The track runs at about 89 BPM, and every cut and key press sits on a beat or
+      // half-beat of this grid.
+      const MUSIC = { from: 18.988, volume: 0.35 };
+      const BEAT_LENGTH = 0.6745;
+      const FIRST_BEAT = (22.396 - MUSIC.from) % BEAT_LENGTH;
+      const beat = (n) => FIRST_BEAT + n * BEAT_LENGTH;
+
+      const DURATION = 17.6;
+      const CENTER = { x: W / 2, y: H / 2 };
+      const PREVIEW_CENTER = { x: 1664 + 120, y: 888 + 71 };
+
+      // One schedule for the whole piece, in seconds: three scenes with text slides between
+      // them. Moves the camera tracks share an ease so it can be keyed onto the pointer.
+      const HOOK = { typeEnd: beat(2) - 0.1, enter: beat(2), reply: beat(2) + 0.15, replyDuration: 0.5 };
+      const SLIDE_BLIND = { in: beat(5), out: beat(7) };
+      const CAPTURE = {
+        keys: beat(7) + 0.1,
+        freeze: beat(7.5),
+        press: beat(8),
+        release: beat(9.5),
+        preview: beat(9.5) + 0.06,
+        click: beat(10),
+      };
+      const DRAG = { start: beat(8) + 0.04, duration: 0.72, ease: "power2.inOut" };
+      const EDITOR = { open: beat(10) + 0.1 };
+      const ARROW_DRAW = { keys: beat(10.5), zoomIn: beat(11), start: beat(11.5), duration: 0.88, ease: "power1.inOut" };
+      const HIDE = { keys: beat(13), glide: beat(13.5), start: beat(14), duration: 0.44 };
+      const COPY = { keys: beat(15), click: beat(15) + 0.2, close: beat(15) + 0.32 };
+      const PASTE = {
+        back: beat(16),
+        keys: beat(16) + 0.15,
+        show: beat(16) + 0.25,
+        fly: beat(16) + 0.6,
+        type: beat(16) + 0.85,
+        enter: beat(18),
+      };
+      const ANSWER = { spinner: beat(18) + 0.05, read: beat(18) + 0.4, reply: beat(18) + 0.5, update: beat(20) };
+      const SLIDE_EYES = { in: beat(21), eyes: beat(21.5), out: beat(23) };
+      const END = { wipe: beat(23) };
+
+      function along(from, to, progress) {
+        return { x: from.x + (to.x - from.x) * progress, y: from.y + (to.y - from.y) * progress };
+      }
+
+      function sampleMove(move, from, to, t) {
+        const u = clamp((t - move.start) / move.duration, 0, 1);
+        return along(from, to, gsap.parseEase(move.ease)(u));
+      }
+
+      function cameraTransform(camera) {
+        const s = camera.scale;
+        return {
+          x: clamp(W / 2 - camera.x * s, W - W * s, 0),
+          y: clamp(H / 2 - camera.y * s, H - H * s, 0),
+          scale: s,
+        };
+      }
+
+      // The desktop camera stays put through the capture. In the editor it makes three calm
+      // moves: in to the arrow and along it, across to the password, and back out.
+      function buildCameraKeys() {
+        const arrowStart = shotToWorld(TARGETS.arrow.from);
+        const arrowEnd = shotToWorld(TARGETS.arrow.to);
+        const secret = shotToWorld({
+          x: TARGETS.redact.x + TARGETS.redact.w / 2,
+          y: TARGETS.redact.y + TARGETS.redact.h / 2,
+        });
+        const zoom = 1.7;
+
+        // Follows the head like the camera followed the caret, a touch behind it.
+        const lag = 0.15;
+        const arrowKeys = [0.5, 1].map((fraction) => {
+          const t = ARROW_DRAW.start + ARROW_DRAW.duration * fraction;
+          const head = sampleMove(ARROW_DRAW, arrowStart, arrowEnd, t - lag);
+          return [t, head.x, head.y, zoom];
+        });
+
+        // Cuts between spots; the camera only moves while it tracks the arrow being drawn.
+        const cut = 0.01;
+        return [
+          [0, CENTER.x, CENTER.y, 1],
+          [ARROW_DRAW.zoomIn, CENTER.x, CENTER.y, 1],
+          [ARROW_DRAW.zoomIn + cut, arrowStart.x, arrowStart.y, zoom],
+          [ARROW_DRAW.start, arrowStart.x, arrowStart.y, zoom],
+          ...arrowKeys,
+          [HIDE.glide, arrowEnd.x, arrowEnd.y, zoom],
+          [HIDE.glide + cut, secret.x, secret.y, zoom],
+          [DURATION, secret.x, secret.y, zoom],
+        ];
+      }
+
+      function elementCenter(selector) {
+        const element = $(selector);
+        const origin = offsetWithin(element, $("#agent-world"));
+        return { x: origin.x + element.offsetWidth / 2, y: origin.y + element.offsetHeight / 2 };
+      }
+
+      // Width of one monospaced character in the prompt, and where the prompt text starts.
+      function promptMetrics() {
+        const first = $("#input-first");
+        const origin = offsetWithin(first, $("#agent-world"));
+        return { left: origin.x, charWidth: first.scrollWidth / first.textContent.length };
+      }
+
+      const HOOK_VISIBLE_CHARS = 12;
+
+      function buildAgentCameraKeys() {
+        const input = elementCenter(".input-box");
+        const answer = elementCenter("#reply-after");
+        const prompt = promptMetrics();
+        const total = $("#input-first").textContent.length;
+        const lead = 110;
+        const caretAt = (chars) => prompt.left + chars * prompt.charWidth - lead;
+        return [
+          [0, caretAt(HOOK_VISIBLE_CHARS), input.y, 3],
+          [HOOK.typeEnd, caretAt(total), input.y, 3],
+          [HOOK.enter, caretAt(total), input.y, 3],
+          [HOOK.enter + 0.01, 690, 386, 1.45],
+          [PASTE.back, 690, 386, 1.45],
+          [PASTE.back + 0.01, 720, input.y, 1.3],
+          [PASTE.enter, 720, input.y, 1.3],
+          [PASTE.enter + 0.01, 860, answer.y, 1.12],
+          [DURATION, 860, answer.y, 1.12],
+        ];
+      }
+
+      let agentCameraAt = () => ({ x: W / 2, y: H / 2, scale: 1 });
+
+      function renderAgentCamera() {
+        const view = cameraTransform(agentCameraAt(clock.t));
+        $("#agent-world").style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.scale})`;
+      }
+
+      function smoothstep(edge0, edge1, value) {
+        const u = clamp((value - edge0) / (edge1 - edge0), 0, 1);
+        return u * u * (3 - 2 * u);
+      }
+
+      // Googly eyes: after they land, each pupil swings and settles at the bottom like a loose
+      // pupil, then both look up at the viewer. A pure function of time, so any frame can seek.
+      // How far each pupil drops from center at rest, measured once at build.
+      let pupilRests = [];
+
+      function measurePupils() {
+        pupilRests = [...$("#slide-eyes-pair").querySelectorAll(".eye")].map((eye) => eye.offsetWidth * 0.2);
+      }
+
+      function renderGoogly() {
+        const dt = Math.max(0, clock.t - SLIDE_EYES.eyes);
+        const lookUp = smoothstep(0.85, 1.0, dt);
+        $("#slide-eyes-pair").querySelectorAll(".pupil").forEach((pupil, index) => {
+          const rest = pupilRests[index] ?? 0;
+          const decay = Math.exp(-3 * dt);
+          const phase = index * 1.3;
+          const x = rest * 0.9 * decay * Math.sin(17 * dt + phase);
+          const swing = rest - rest * 1.7 * decay * Math.abs(Math.cos(12 * dt + phase));
+          const y = swing * (1 - lookUp);
+          pupil.style.transform = `translate(${x * (1 - lookUp)}px, ${y}px)`;
+        });
+      }
+
+      function prepareTyping(selector, visibleChars) {
+        const element = $(selector);
+        const charWidth = element.scrollWidth / element.textContent.length;
+        element.dataset.charWidth = charWidth;
+        element.style.width = `${visibleChars * charWidth}px`;
+      }
+
+      function typeInto(tl, selector, at, duration, fromChars = 0) {
+        const element = $(selector);
+        const total = element.textContent.length;
+        const charWidth = Number(element.dataset.charWidth);
+        tl.fromTo(
+          element,
+          { width: fromChars * charWidth },
+          { width: total * charWidth, duration, ease: `steps(${total - fromChars})` },
+          at,
+        );
+      }
+
+      // Slides cut in and out. The text can rise into place, or just be there.
+      function showSlide(tl, selector, at, out, { rise = true } = {}) {
+        tl.set(selector, { opacity: 1 }, at);
+        if (rise) {
+          tl.fromTo(`${selector} .slide-text`, { y: 30 }, { y: 0, duration: 0.3, ease: "power3.out" }, at);
+        }
+        tl.set(selector, { opacity: 0 }, out);
+      }
+
+      function build() {
+        TARGETS = measureTargets();
+        cloneApp($("#shot-inner"));
+        cloneApp($("#thumb-inner"));
+        paintMosaic();
+        buildAttachment();
+        splitIntoCharacters($("#reply-before"));
+        splitIntoCharacters($("#reply-after"));
+        cameraAt = cameraPath(buildCameraKeys());
+        agentCameraAt = cameraPath(buildAgentCameraKeys());
+        measurePupils();
+        prepareTyping("#input-first", HOOK_VISIBLE_CHARS);
+        prepareTyping("#input-typed", 0);
+        pointer.x = 1250;
+        pointer.y = 640;
+        render();
+
+        const tl = gsap.timeline({ paused: true, defaults: { onUpdate: render, immediateRender: false } });
+        tl.to(clock, { t: DURATION, duration: DURATION, ease: "none" }, 0);
+
+        // Scene 1: extreme close-up on the prompt, then pull back so the reply can be read.
+        typeInto(tl, "#input-first", 0, HOOK.typeEnd, HOOK_VISIBLE_CHARS);
+        tl.set("#input-first", { display: "none" }, HOOK.enter);
+        tl.set("#msg-first", { opacity: 1 }, HOOK.enter);
+        tl.set("#reply-before-line", { opacity: 1 }, HOOK.reply - 0.05);
+        typeOut(tl, "#reply-before", HOOK.reply, HOOK.replyDuration);
+
+        showSlide(tl, "#slide-blind", SLIDE_BLIND.in, SLIDE_BLIND.out, { rise: false });
+        tl.set("#agent-scene", { opacity: 0 }, SLIDE_BLIND.in);
+
+        // Scene 2: the desktop, camera still. ⇧⌘A, drag, flash, preview card, click.
+        popKeys(tl, "#combo-capture", CAPTURE.keys, 0.56);
+        tl.to("#dim", { opacity: 1, duration: 0.12 }, CAPTURE.freeze);
+        tl.to(["#hint", ".guide"], { opacity: 1, duration: 0.12 }, CAPTURE.freeze);
+        tl.set(pointer, { cross: 1 }, CAPTURE.freeze);
+        tl.to(pointer, { x: SHOT.x, y: SHOT.y, duration: 0.32, ease: "power2.inOut" }, CAPTURE.freeze);
+        tl.to([".guide", "#hint"], { opacity: 0, duration: 0.1 }, CAPTURE.press);
+        tl.set("#selection", { opacity: 1 }, CAPTURE.press);
+        tl.set("#dim", { opacity: 0 }, CAPTURE.press);
+        tl.to("#size-label", { opacity: 1, duration: 0.08 }, CAPTURE.press);
+        tl.to(selection, { w: SHOT.w, h: SHOT.h, duration: DRAG.duration, ease: DRAG.ease }, DRAG.start);
+        tl.to(pointer, { x: SHOT.x + SHOT.w, y: SHOT.y + SHOT.h, duration: DRAG.duration, ease: DRAG.ease }, DRAG.start);
+        tl.fromTo("#flash", { opacity: 0.55 }, { opacity: 0, duration: 0.3, ease: "power2.out" }, CAPTURE.release);
+        tl.set(["#selection", "#size-label"], { opacity: 0 }, CAPTURE.release);
+        tl.set(pointer, { cross: 0 }, CAPTURE.release);
+        tl.fromTo("#preview", { opacity: 0, x: 256 }, { opacity: 1, x: 0, duration: 0.2, ease: "power2.out" }, CAPTURE.preview);
+        tl.to(pointer, { x: PREVIEW_CENTER.x, y: PREVIEW_CENTER.y, duration: 0.28, ease: "power2.inOut" }, CAPTURE.preview + 0.04);
+        tl.to("#preview", { scale: 0.96, duration: 0.05, ease: "power1.in" }, CAPTURE.click);
+        tl.to("#preview", { opacity: 0, duration: 0.1 }, CAPTURE.click + 0.06);
+        tl.to("#focus-dim", { opacity: 1, duration: 0.3, ease: "power2.out" }, EDITOR.open);
+        tl.fromTo("#editor", { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 0.28, ease: "back.out(1.3)" }, EDITOR.open);
+
+        // Scene 3: annotate. The camera follows the arrow as it draws, then the password.
+        const arrowStart = shotToWorld(TARGETS.arrow.from);
+        const arrowEnd = shotToWorld(TARGETS.arrow.to);
+        popKeys(tl, "#combo-arrow", ARROW_DRAW.keys, 0.4);
+        tl.set("#tool-arrow .active", { opacity: 1 }, ARROW_DRAW.keys + 0.05);
+        tl.to(pointer, { x: arrowStart.x, y: arrowStart.y, duration: 0.4, ease: "power2.inOut" }, ARROW_DRAW.zoomIn);
+        tl.to(arrow, { progress: 1, duration: ARROW_DRAW.duration, ease: ARROW_DRAW.ease }, ARROW_DRAW.start);
+        tl.to(pointer, { x: arrowEnd.x, y: arrowEnd.y, duration: ARROW_DRAW.duration, ease: ARROW_DRAW.ease }, ARROW_DRAW.start);
+
+        const redactStart = shotToWorld({ x: TARGETS.redact.x, y: TARGETS.redact.y });
+        const redactEnd = shotToWorld({
+          x: TARGETS.redact.x + TARGETS.redact.w,
+          y: TARGETS.redact.y + TARGETS.redact.h,
+        });
+        popKeys(tl, "#combo-redact", HIDE.keys, 0.4);
+        tl.set("#tool-arrow .active", { opacity: 0 }, HIDE.keys + 0.1);
+        tl.set("#tool-redact .active", { opacity: 1 }, HIDE.keys + 0.1);
+        tl.to(pointer, { x: redactStart.x, y: redactStart.y, duration: 0.44, ease: "power2.inOut" }, HIDE.glide);
+        tl.to(redact, { progress: 1, duration: HIDE.duration, ease: "power1.inOut" }, HIDE.start);
+        tl.to(pointer, { x: redactEnd.x, y: redactEnd.y, duration: HIDE.duration, ease: "power1.inOut" }, HIDE.start);
+
+        popKeys(tl, "#combo-copy", COPY.keys, 0.22);
+        tl.to("#copy-button .active", { opacity: 1, duration: 0.05 }, COPY.click);
+        tl.to("#copy-button .active", { opacity: 0, duration: 0.1 }, COPY.click + 0.08);
+        tl.to("#editor", { opacity: 0, scale: 0.95, duration: 0.18, ease: "power2.in" }, COPY.close);
+
+        // Scene 4: back in the agent. ⌘V drops the screenshot into the prompt as an image token.
+        tl.set("#agent-scene", { opacity: 1 }, PASTE.back);
+        popKeys(tl, "#combo-paste", PASTE.keys, 0.45);
+        const glyph = $(".input-box .glyph");
+        const glyphOrigin = offsetWithin(glyph, $("#agent-world"));
+        const token = {
+          x: glyphOrigin.x + glyph.offsetWidth + 18 + ($("#input-token").textContent.length * Number($("#input-first").dataset.charWidth)) / 2,
+          y: glyphOrigin.y + glyph.offsetHeight / 2,
+        };
+        const view = cameraTransform(agentCameraAt(PASTE.fly + 0.25));
+        const tokenOnScreen = { x: view.x + token.x * view.scale, y: view.y + token.y * view.scale };
+        const imageCenter = { x: 720 + 240, y: 440 + 142.5 };
+        tl.fromTo("#paste-image", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.2, ease: "back.out(1.8)" }, PASTE.show);
+        tl.to(
+          "#paste-image",
+          {
+            x: tokenOnScreen.x - imageCenter.x,
+            y: tokenOnScreen.y - imageCenter.y,
+            scale: 0.1,
+            opacity: 0,
+            duration: 0.25,
+            ease: "power2.in",
+          },
+          PASTE.fly,
+        );
+        tl.set("#input-token", { display: "inline" }, PASTE.fly + 0.2);
+        tl.fromTo("#input-token", { opacity: 0, scale: 1.4 }, { opacity: 1, scale: 1, duration: 0.15, ease: "back.out(2)" }, PASTE.fly + 0.2);
+        typeInto(tl, "#input-typed", PASTE.type, 0.3);
+        tl.set(["#input-token", "#input-typed"], { display: "none" }, PASTE.enter);
+        tl.to("#msg-image", { opacity: 1, duration: 0.08 }, PASTE.enter);
+        tl.to("#spinner", { opacity: 1, duration: 0.06 }, ANSWER.spinner);
+        tl.to("#spinner .star", { rotation: 360, duration: 0.35, ease: "none" }, ANSWER.spinner);
+        tl.set("#spinner", { opacity: 0 }, ANSWER.read);
+        tl.to(".tool-read", { opacity: 1, duration: 0.08 }, ANSWER.read);
+        tl.to(".reply-glyph", { opacity: 1, duration: 0.06 }, ANSWER.reply);
+        typeOut(tl, "#reply-after", ANSWER.reply, 0.7);
+        tl.to(".tool-update", { opacity: 1, duration: 0.1 }, ANSWER.update);
+
+        // Slide: give it eyes.
+        showSlide(tl, "#slide-eyes", SLIDE_EYES.in, SLIDE_EYES.out);
+        tl.fromTo(
+          "#slide-eyes-pair",
+          { opacity: 0, scale: 2.4, rotation: -25 },
+          { opacity: 1, scale: 1, rotation: -6, duration: 0.25, ease: "back.out(2.6)" },
+          SLIDE_EYES.eyes,
+        );
+        tl.fromTo("#slide-eyes-pair .eye", { scaleY: 0.86 }, { scaleY: 1, duration: 0.3, ease: "elastic.out(1.2, 0.4)" }, SLIDE_EYES.eyes + 0.22);
+
+        // End card.
+        tl.set("#endcard", { clipPath: "circle(1200px at 960px 540px)" }, END.wipe);
+        tl.fromTo("#end-icon", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.8)" }, END.wipe);
+        tl.fromTo("#end-name", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, END.wipe + 0.08);
+        tl.fromTo(
+          ["#end-tagline", "#end-url"],
+          { y: 24, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.3, ease: "power3.out", stagger: 0.08 },
+          END.wipe + 0.14,
+        );
+
+        tl.seek(0);
+        window.__timelines["main"] = tl;
+      }
+
+      document.fonts.ready.then(build);
+    </script>
+  </body>
+</html>
