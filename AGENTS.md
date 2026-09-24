@@ -36,4 +36,4 @@ Installed copies read `https://github.com/infomiho/snimach/releases/latest/downl
 
 ## Promo
 
-`promo/` is a [HyperFrames](https://github.com/heygen-com/hyperframes) composition for the promo video: the whole piece is `promo/index.html`, timed on the music's beat grid (`beat(n)`). Validate with `npx hyperframes lint` and render with `npm run render` inside `promo/`. The music track is not committed: put it at `promo/assets/audio/medicine.mp3`. Renders go to `promo/renders/`, which is gitignored.
+`promo/` is a [HyperFrames](https://github.com/heygen-com/hyperframes) composition for the promo video: the whole piece is `promo/index.html`, timed on the music's beat grid (`beat(n)`). Validate with `npx hyperframes lint` and render with `npm run render` inside `promo/`. The music is ["Medicine" by Gvidon](https://pixabay.com/music/drum-n-bass-gvidon-medicine-364031/) from Pixabay. It is not committed: download it to `promo/assets/audio/medicine.mp3`. Renders go to `promo/renders/`, which is gitignored.

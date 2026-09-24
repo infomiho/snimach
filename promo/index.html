@@ -944,6 +944,7 @@
         data-duration="17.6"
         data-media-start="18.988"
         data-volume="0.35"
+        data-fade-in="0.6"
         data-fade-out="1"
         data-track-index="1"
       ></audio>
@@ -1154,8 +1155,6 @@
             <div class="keycap">⌘</div>
             <div class="keycap accent">A</div>
           </div>
-          <div id="combo-arrow" class="combo"><div class="keycap accent">A</div></div>
-          <div id="combo-redact" class="combo"><div class="keycap accent">B</div></div>
           <div id="combo-copy" class="combo">
             <div class="keycap">⌘</div>
             <div class="keycap accent">C</div>
@@ -1514,9 +1513,10 @@
         tl.to(`${selector} span`, { opacity: 1, duration: 0.01, stagger: duration / $(selector).children.length }, at);
       }
 
-      // Music: "Medicine" from five beats before its drop at 22.39 s, so the drop lands on the
-      // "can't see your screen" slide. The track runs at about 89 BPM, and every cut and key press sits on a beat or
-      // half-beat of this grid.
+      // Music: "Medicine" by Gvidon, https://pixabay.com/music/drum-n-bass-gvidon-medicine-364031/
+      // It starts five beats before its drop at 22.39 s, so the drop lands on the "can't see
+      // your screen" slide. The track runs at about 89 BPM, and every cut and key press sits on
+      // a beat or half-beat of this grid.
       const MUSIC = { from: 18.988, volume: 0.35 };
       const BEAT_LENGTH = 0.6745;
       const FIRST_BEAT = (22.396 - MUSIC.from) % BEAT_LENGTH;
@@ -1759,7 +1759,6 @@
         // Scene 3: annotate. The camera follows the arrow as it draws, then the password.
         const arrowStart = shotToWorld(TARGETS.arrow.from);
         const arrowEnd = shotToWorld(TARGETS.arrow.to);
-        popKeys(tl, "#combo-arrow", ARROW_DRAW.keys, 0.4);
         tl.set("#tool-arrow .active", { opacity: 1 }, ARROW_DRAW.keys + 0.05);
         tl.to(pointer, { x: arrowStart.x, y: arrowStart.y, duration: 0.4, ease: "power2.inOut" }, ARROW_DRAW.zoomIn);
         tl.to(arrow, { progress: 1, duration: ARROW_DRAW.duration, ease: ARROW_DRAW.ease }, ARROW_DRAW.start);
@@ -1770,7 +1769,6 @@
           x: TARGETS.redact.x + TARGETS.redact.w,
           y: TARGETS.redact.y + TARGETS.redact.h,
         });
-        popKeys(tl, "#combo-redact", HIDE.keys, 0.4);
         tl.set("#tool-arrow .active", { opacity: 0 }, HIDE.keys + 0.1);
         tl.set("#tool-redact .active", { opacity: 1 }, HIDE.keys + 0.1);
         tl.to(pointer, { x: redactStart.x, y: redactStart.y, duration: 0.44, ease: "power2.inOut" }, HIDE.glide);
