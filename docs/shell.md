@@ -30,7 +30,8 @@ Files, one type each:
 - `Hotkeys.swift`: `extension KeyboardShortcuts.Name` with two names and `initial:` defaults, and one `Task` per name looping `for await _ in KeyboardShortcuts.events(for:) where == .keyUp`.
 - `PermissionAlert.swift`: one NSAlert switching on `PermissionState`. Open System Settings button for every state, Relaunch button for `.grantedNeedsRelaunch`.
 - `LaunchAtLogin.swift`: `var isEnabled: Bool` reading `SMAppService.mainApp.status == .enabled` on every get, `register()` / `unregister()` on set.
-- `SettingsView.swift`: SwiftUI `TabView` with Capture plus Shortcuts plus General tabs. Capture holds after capture and pointer, Shortcuts holds three `KeyboardShortcuts.Recorder` rows, General holds folder and LaunchAtLogin.
+- `SettingsView.swift`: SwiftUI sidebar with App, Capture, Shortcuts and About panes. App holds the save folder, LaunchAtLogin and Updates, Capture holds after capture, pointer and preview hiding, Shortcuts holds three `KeyboardShortcuts.Recorder` rows.
+- `Updater.swift`: `SPUStandardUpdaterController` plus its delegate, `nil` when the bundle has no `SUFeedURL`. Publishes `UpdateCheck` (not checked, up to date, available, skipped) for the Updates section and exposes Sparkle's persisted automatic-checks flag. Sparkle's own windows do the rest.
 - `SettingsWindowController.swift`: NSWindow hosting `NSHostingView(rootView: SettingsView())`, owns the activation-policy switch.
 - `EditorLayout.swift`: fits and centers the stage without upscaling. `EditorStageView` overlays
   the accessory bar and color chip, and transitions backdrop changes inside a fixed window.

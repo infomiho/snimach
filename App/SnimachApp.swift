@@ -21,6 +21,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         MainMenu.install()
         let preferences = Preferences()
+        let updater = Updater()
+        self.updater = updater
         let capturer = Capturer(includesPointer: { preferences.includesPointer })
         let output = ShotOutput(folder: { preferences.saveFolder })
         let coordinator = Coordinator(
@@ -34,11 +36,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             makeEditor: { AppDelegate.editorWindowController(document: $0, preferences: preferences) },
             presenter: ShellPresenter(),
             afterCapture: { preferences.afterCapture },
-            makeSettings: { SettingsWindowController(preferences: preferences) }
+            makeSettings: { SettingsWindowController(preferences: preferences, updater: updater) }
         )
         self.coordinator = coordinator
-        let updater = Updater()
-        self.updater = updater
         statusMenu = StatusMenu(coordinator: coordinator, checkForUpdates: updater.map { updater in
             { updater.checkForUpdates() }
         })

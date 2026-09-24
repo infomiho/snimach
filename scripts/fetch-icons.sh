@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Vendors the Solar icons the editor toolbar uses as vector PDFs, so the app does not depend on
+# Vendors the Solar icons the app uses as vector PDFs, so the app does not depend on
 # runtime SVG support. Solar is CC BY 4.0, see ATTRIBUTION.md.
 
 set -euo pipefail
@@ -26,6 +26,12 @@ ICONS=(
   crop-linear
   window-frame-linear
   monitor-linear
+  tuning-2-linear
+  camera-linear
+  keyboard-linear
+  info-circle-linear
+  folder-linear
+  refresh-linear
 )
 
 mkdir -p "$OUT"

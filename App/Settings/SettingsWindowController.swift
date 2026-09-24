@@ -8,10 +8,15 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let launchAtLogin = LaunchAtLoginModel()
     private let selection = SettingsSelection()
 
-    init(preferences: Preferences) {
+    init(preferences: Preferences, updater: Updater? = nil) {
         let model = launchAtLogin
         let hosting = NSHostingController(
-            rootView: SettingsView(launchAtLogin: model, preferences: preferences, selection: selection)
+            rootView: SettingsView(
+                launchAtLogin: model,
+                preferences: preferences,
+                updater: updater,
+                selection: selection
+            )
         )
         let window = NSWindow(contentViewController: hosting)
         window.title = "Snimach Settings"

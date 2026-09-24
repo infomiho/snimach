@@ -22,10 +22,10 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .app: return "app.badge"
-        case .capture: return "photo"
-        case .shortcuts: return "keyboard"
-        case .about: return "info.circle"
+        case .app: return "tuning-2-linear"
+        case .capture: return "camera-linear"
+        case .shortcuts: return "keyboard-linear"
+        case .about: return "info-circle-linear"
         }
     }
 }
@@ -44,6 +44,19 @@ private extension Color {
     }
 }
 
+/// A vendored Solar icon, tinted by `foregroundStyle` like text.
+private struct SolarIcon: View {
+    let name: String
+    var size: CGFloat = 20
+
+    var body: some View {
+        Image(nsImage: BundledIcon.image(name) ?? NSImage())
+            .renderingMode(.template)
+            .resizable()
+            .frame(width: size, height: size)
+    }
+}
+
 private struct SidebarSelection: View {
     let isSelected: Bool
 
@@ -58,6 +71,7 @@ private struct SidebarSelection: View {
 struct SettingsView: View {
     @ObservedObject var launchAtLogin: LaunchAtLoginModel
     @ObservedObject var preferences: Preferences
+    let updater: Updater?
     @ObservedObject var selection: SettingsSelection
 
     var body: some View {
@@ -82,7 +96,7 @@ struct SettingsView: View {
                                 Text(tab.title)
                                     .foregroundStyle(.primary)
                             } icon: {
-                                Image(systemName: tab.icon)
+                                SolarIcon(name: tab.icon, size: 16)
                                     .foregroundStyle(selection.tab == tab ? Color.brand : .secondary)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -98,7 +112,7 @@ struct SettingsView: View {
         } detail: {
             switch selection.tab {
             case .app:
-                AppSettingsView(launchAtLogin: launchAtLogin, preferences: preferences)
+                AppSettingsView(launchAtLogin: launchAtLogin, preferences: preferences, updater: updater)
             case .capture:
                 CaptureSettingsView(preferences: preferences)
             case .shortcuts:
@@ -208,6 +222,7 @@ private struct ShortcutRow: View {
 private struct AppSettingsView: View {
     @ObservedObject var launchAtLogin: LaunchAtLoginModel
     @ObservedObject var preferences: Preferences
+    let updater: Updater?
 
     var body: some View {
         ScrollView {
@@ -216,9 +231,8 @@ private struct AppSettingsView: View {
                 Form {
                     Section {
                         HStack(alignment: .center, spacing: 10) {
-                            Image(systemName: "folder")
+                            SolarIcon(name: "folder-linear")
                                 .foregroundStyle(.secondary)
-                                .font(.title3)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(preferences.saveFolder.lastPathComponent)
                                     .font(.body)
@@ -257,6 +271,16 @@ private struct AppSettingsView: View {
                     } footer: {
                         Text("Snimach lives in the menu bar and stays out of the Dock.")
                     }
+
+                    if let updater {
+                        UpdatesSection(updater: updater)
+                    } else {
+                        Section {
+                            VersionRow(summary: "This build does not update itself.")
+                        } header: {
+                            Text("Updates")
+                        }
+                    }
                 }
                 .formStyle(.grouped)
                 .scrollContentBackground(.hidden)
@@ -281,5 +305,56 @@ private struct AppSettingsView: View {
         let folder = preferences.saveFolder
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         NSWorkspace.shared.activateFileViewerSelecting([folder])
+    }
+}
+
+private struct UpdatesSection: View {
+    @ObservedObject var updater: Updater
+
+    var body: some View {
+        Section {
+            VersionRow(summary: updater.check.summary, isHighlighted: updater.check.isAvailable) {
+                if updater.check.isAvailable {
+                    Button(updater.check.actionTitle, action: updater.checkForUpdates)
+                        .buttonStyle(.borderedProminent)
+                } else {
+                    Button(updater.check.actionTitle, action: updater.checkForUpdates)
+                }
+            }
+            Toggle("Check for updates automatically", isOn: $updater.automaticallyChecks)
+        } header: {
+            Text("Updates")
+        } footer: {
+            Text("Snimach always asks before it installs an update.")
+        }
+    }
+}
+
+private struct VersionRow<Action: View>: View {
+    let summary: String
+    var isHighlighted = false
+    @ViewBuilder var action: Action
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            SolarIcon(name: "refresh-linear")
+                .foregroundStyle(isHighlighted ? Color.brand : .secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Version \(AppInfo.shortVersion)")
+                    .font(.body)
+                Text(summary)
+                    .font(.caption)
+                    .foregroundStyle(isHighlighted ? Color.brand : .secondary)
+            }
+            Spacer(minLength: 8)
+            action
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+extension VersionRow where Action == EmptyView {
+    init(summary: String) {
+        self.init(summary: summary) { EmptyView() }
     }
 }

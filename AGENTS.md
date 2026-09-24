@@ -7,6 +7,7 @@ Menubar screenshot app for macOS 14+. Two hotkeys, one editor, clipboard first.
 - `swift` on this Mac needs full Xcode: if `swift test` fails with "Could not initialize build system", run it with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - Screen Recording grants are keyed to the code signature, so local runs go through `scripts/run.sh`, which signs with the machine's Developer ID and installs to /Applications.
 - Module designs live in `docs/` (`capture.md`, `document.md`, `output.md`, `shell.md`), the ordered task list in `TASKS.md`, and the brand sources in `design/svg` (`scripts/make-icon.sh` renders the icon and menu bar mark).
+- Icons are Solar only, never SF Symbols. Add the `linear` name to `scripts/fetch-icons.sh`, vendor it into `App/Resources/Icons` and load it with `BundledIcon`.
 - Bundle identifier `dev.twoducks.snimach`. Saved shots go to `~/Pictures/Snimach` by default.
 
 ## Releases
