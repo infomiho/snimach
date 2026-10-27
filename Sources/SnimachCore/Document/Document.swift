@@ -184,15 +184,13 @@ public struct Document {
             editedTextIndex = nil
 
         case .colorSelected(let color):
+            drawingColor = color
             if textDraft != nil {
                 textDraft?.color = color
                 return
             }
             cancelDrag()
-            guard let index = selectedIndex else {
-                drawingColor = color
-                return
-            }
+            guard let index = selectedIndex else { return }
             let updated = annotations[index].colored(color)
             guard updated != annotations[index] else { return }
             undoStack.append(annotations)

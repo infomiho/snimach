@@ -3,6 +3,24 @@ import XCTest
 @testable import SnimachCore
 
 final class AnnotationEditingTests: XCTestCase {
+    func testLastChosenColorCarriesFromTextToFutureShapes() {
+        var document = Document(shot: makeShot(pointSize: CGSize(width: 200, height: 150), scale: 2))
+        document.apply(.toolSelected(.text))
+        document.apply(.pointerDown(CGPoint(x: 20, y: 120)))
+        document.apply(.textChanged("Blue label"))
+        document.apply(.colorSelected(.blue))
+        document.apply(.finishText)
+        document.apply(.toolSelected(.line))
+        document.apply(.pointerDown(CGPoint(x: 20, y: 30)))
+        document.apply(.pointerUp(CGPoint(x: 100, y: 30)))
+        XCTAssertEqual(document.annotations.last?.color, .blue)
+        document.apply(.colorSelected(.green))
+        document.apply(.toolSelected(.number))
+        document.apply(.pointerUp(CGPoint(x: 150, y: 80)))
+        XCTAssertEqual(document.annotations.last?.color, .green)
+        XCTAssertEqual(document.annotations.first?.color, .blue)
+    }
+
     func testRedoCannotReplaceNewTextDraftWithUndoneAnnotation() {
         var document = Document(shot: makeShot(pointSize: CGSize(width: 200, height: 150), scale: 2))
         document.apply(.toolSelected(.number))

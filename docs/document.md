@@ -16,8 +16,8 @@ backdrop. Its public state includes `annotations`, `selectedIndex`, `selectionBo
 - `arrowReversed` reverses an arrow while Command is held. `angleConstrained` snaps lines and
   arrows to 45-degree increments while Shift is held.
 - `deselect`, `deleteSelection` and `nudgeSelection` edit the selected object.
-- `colorSelected` changes the selected object or draft. Without a selection it changes the
-  next drawing color. Redactions have no decorative color.
+- `colorSelected` changes the selected object or draft and remembers that color for future
+  annotations across tools. Redactions have no decorative color.
 - `textSizeSelected` changes selected text or a draft. Without a selection it sets the next
   text size.
 - `editText` opens existing text at a point. The Text tool also opens existing text, or starts
