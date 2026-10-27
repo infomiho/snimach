@@ -16,7 +16,10 @@ final class EditorTextTests: XCTestCase {
         editor.insertText("Label", replacementRange: NSRange(location: NSNotFound, length: 0))
         controller.accessoryBar.colorButton.performClick(nil)
         XCTAssertFalse(controller.styleShelf.isHidden)
-        let location = canvas.convert(CGPoint(x: 250, y: 140), to: nil)
+        let content = try XCTUnwrap(controller.panel.contentView)
+        content.layoutSubtreeIfNeeded()
+        let location = canvas.convert(CGPoint(x: 350, y: 260), to: nil)
+        XCTAssertTrue(content.hitTest(content.convert(location, from: nil)) === canvas)
         let click = try XCTUnwrap(NSEvent.mouseEvent(with: .leftMouseDown, location: location, modifierFlags: [],
             timestamp: 0, windowNumber: controller.panel.windowNumber, context: nil,
             eventNumber: 0, clickCount: 1, pressure: 1))

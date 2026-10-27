@@ -29,6 +29,7 @@ jobs:
       - run: brew install xcodegen
       - run: xcodegen generate --spec App/project.yml
       - run: |
+          set -o pipefail
           xcodebuild test \
             -project App/Snimach.xcodeproj \
             -scheme Snimach \
