@@ -5,6 +5,32 @@ import XCTest
 
 @MainActor
 final class EditorTextTests: XCTestCase {
+    func testClickingAwayFinishesTextAndAllowsDraggingIt() throws {
+        let controller = EditorWindowController(document: Document(shot: makeTestShot(frame: CGRect(x: 0, y: 0, width: 400, height: 300))))
+        controller.show()
+        defer { controller.close() }
+        let canvas = controller.canvas
+        canvas.apply(.toolSelected(.text))
+        canvas.apply(.pointerDown(CGPoint(x: 30, y: 220)))
+        let editor = try XCTUnwrap(canvas.textEditor)
+        editor.insertText("Label", replacementRange: NSRange(location: NSNotFound, length: 0))
+        let location = canvas.convert(CGPoint(x: 250, y: 140), to: nil)
+        let click = try XCTUnwrap(NSEvent.mouseEvent(with: .leftMouseDown, location: location, modifierFlags: [],
+            timestamp: 0, windowNumber: controller.panel.windowNumber, context: nil,
+            eventNumber: 0, clickCount: 1, pressure: 1))
+        controller.panel.sendEvent(click)
+        XCTAssertNil(controller.document.textDraft)
+        XCTAssertEqual(controller.document.tool, .select)
+        XCTAssertEqual(controller.document.annotations.count, 1)
+        XCTAssertNil(controller.document.selectionBounds)
+        canvas.apply(.pointerDown(CGPoint(x: 35, y: 210)))
+        canvas.apply(.pointerDragged(CGPoint(x: 55, y: 190)))
+        canvas.apply(.pointerUp(CGPoint(x: 55, y: 190)))
+        guard case .text(let text) = controller.document.annotations.first else { return XCTFail("Expected text") }
+        XCTAssertEqual(text.origin, CGPoint(x: 50, y: 200))
+        XCTAssertNotNil(controller.document.selectionBounds)
+    }
+
     func testEscapeCancelsTextDraftAndReturnsToSelect() throws {
         let controller = EditorWindowController(document: Document(shot: makeTestShot()))
         controller.show()

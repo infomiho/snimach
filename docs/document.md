@@ -72,7 +72,8 @@ in the shell. Text origins are the top-left corner of their first line.
 and live previews. `render(includesTextDraft:)` uses that path in a bitmap at `shot.scale`,
 then adds the optional gradient backdrop. Both include the text draft by default. The canvas
 passes `includesTextDraft: false` while its native text view displays the draft, preventing
-double-painted text. Selection outlines are shell-only and never enter the exported image.
+double-painted text. Selection outlines appear only in Select mode, are shell-only and never
+enter the exported image. Drawing tools retain the latest annotation for styling without an outline.
 
 For interactive backdrop previews, `renderStageBackground()` renders the screenshot and
 backdrop without annotations. `drawStageAnnotations(in:includesTextDraft:)` draws the changing

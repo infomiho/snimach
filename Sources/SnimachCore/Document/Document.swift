@@ -83,7 +83,7 @@ public struct Document {
     }
 
     public var selectionBounds: CGRect? {
-        guard textDraft == nil else { return nil }
+        guard tool == .select, textDraft == nil else { return nil }
         return selectedIndex.map { annotations[$0].bounds }
     }
 

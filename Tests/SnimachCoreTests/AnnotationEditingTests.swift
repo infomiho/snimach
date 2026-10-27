@@ -3,6 +3,21 @@ import XCTest
 @testable import SnimachCore
 
 final class AnnotationEditingTests: XCTestCase {
+    func testDrawingOnlyShowsOutlineAfterExplicitSelection() {
+        var document = Document(shot: makeShot(pointSize: CGSize(width: 100, height: 80), scale: 2))
+        document.apply(.pointerDown(CGPoint(x: 10, y: 20)))
+        document.apply(.pointerUp(CGPoint(x: 70, y: 20)))
+        XCTAssertNil(document.selectionBounds)
+        document.apply(.pointerDown(CGPoint(x: 10, y: 50)))
+        document.apply(.pointerDragged(CGPoint(x: 70, y: 50)))
+        XCTAssertNil(document.selectionBounds)
+        document.apply(.pointerUp(CGPoint(x: 70, y: 50)))
+        document.apply(.toolSelected(.select))
+        document.apply(.pointerDown(CGPoint(x: 40, y: 20)))
+        document.apply(.pointerUp(CGPoint(x: 40, y: 20)))
+        XCTAssertNotNil(document.selectionBounds)
+    }
+
     func testLastChosenColorCarriesFromTextToFutureShapes() {
         var document = Document(shot: makeShot(pointSize: CGSize(width: 200, height: 150), scale: 2))
         document.apply(.toolSelected(.text))

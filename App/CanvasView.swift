@@ -117,7 +117,7 @@ final class CanvasView: NSView, NSTextViewDelegate {
 
     override func mouseDown(with event: NSEvent) {
         if document.textDraft != nil {
-            apply(.finishText)
+            apply(.toolSelected(.select))
             return
         }
         window?.makeFirstResponder(self)
