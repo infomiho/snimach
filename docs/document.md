@@ -74,6 +74,11 @@ then adds the optional gradient backdrop. Both include the text draft by default
 passes `includesTextDraft: false` while its native text view displays the draft, preventing
 double-painted text. Selection outlines are shell-only and never enter the exported image.
 
+For interactive backdrop previews, `renderStageBackground()` renders the screenshot and
+backdrop without annotations. `drawStageAnnotations(in:includesTextDraft:)` draws the changing
+annotations in stage coordinates, clipped to the rounded screenshot card. Both paths share
+the annotation renderer used by export.
+
 Redactions sample the original screenshot and paint coarse averaged cells. Moving one samples
 its new location. Exported images contain the flattened result. A moved or removed redaction
 reveals the original screenshot at its previous location.

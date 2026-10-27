@@ -63,6 +63,33 @@ final class BackdropTests: XCTestCase {
         XCTAssertGreaterThan(try drawBackdropped(document).count(of: Style.standard.strokeColor), 0)
     }
 
+    func testStageLayersPreserveAnnotationsAndRoundedCardClipping() throws {
+        var document = Document(shot: makeCheckerShot(pointSize: CGSize(width: 100, height: 80), scale: 2))
+        document.apply(.toolSelected(.redact))
+        document.apply(.pointerDown(CGPoint(x: 20, y: 20)))
+        document.apply(.pointerUp(CGPoint(x: 50, y: 50)))
+        document.apply(.toolSelected(.line))
+        document.apply(.pointerDown(CGPoint(x: 0, y: 0)))
+        document.apply(.pointerUp(CGPoint(x: 80, y: 50)))
+        document.apply(.backdropSelected(.solid))
+
+        let background = try document.renderStageBackground()
+        let context = makeContext(width: background.width, height: background.height)
+        context.draw(background, in: CGRect(x: 0, y: 0, width: background.width, height: background.height))
+        context.scaleBy(x: document.shot.scale, y: document.shot.scale)
+        document.drawStageAnnotations(in: context)
+        let layered = Bitmap(context: context, scale: document.shot.scale)
+        let exported = try drawBackdropped(document)
+        for point in [CGPoint(x: 48, y: 48), CGPoint(x: 49, y: 49),
+                      CGPoint(x: 78, y: 78), CGPoint(x: 108, y: 85), CGPoint(x: 10, y: 10)] {
+            let actual = layered.pixel(at: point)
+            let expected = exported.pixel(at: point)
+            XCTAssertLessThanOrEqual(abs(Int(actual.r) - Int(expected.r)), 8, "\(point)")
+            XCTAssertLessThanOrEqual(abs(Int(actual.g) - Int(expected.g)), 8, "\(point)")
+            XCTAssertLessThanOrEqual(abs(Int(actual.b) - Int(expected.b)), 8, "\(point)")
+        }
+    }
+
     func testBackdropChangesAreNotUndoable() {
         var document = makeDocument()
         document.apply(.pointerDown(CGPoint(x: 10, y: 10)))

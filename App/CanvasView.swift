@@ -1,8 +1,7 @@
 import AppKit
 import SnimachCore
 
-/// The whole adapter between AppKit events and the `Document`. It draws through
-/// `document.draw(in:)` and forwards mouse events as tool-agnostic actions.
+/// Adapts AppKit events and drawing to the document.
 final class CanvasView: NSView, NSTextViewDelegate {
     private(set) var textEditor: AnnotationTextView?
     struct HoverColor {
@@ -12,7 +11,10 @@ final class CanvasView: NSView, NSTextViewDelegate {
 
     var document: Document {
         didSet {
-            stageCache = nil
+            if oldValue.shot.image !== document.shot.image || oldValue.shot.scale != document.shot.scale
+                || oldValue.backdrop != document.backdrop || oldValue.backdropPreset != document.backdropPreset {
+                stageCache = nil
+            }
             bounds = CGRect(origin: .zero, size: document.stageSize)
             needsDisplay = true
         }
@@ -37,8 +39,7 @@ final class CanvasView: NSView, NSTextViewDelegate {
     /// Reports a sampled source pixel while inspecting colors.
     var onColorHover: ((HoverColor) -> Void)?
 
-    /// Rendered export preview, so the stage looks exactly like the file.
-    /// Flat mode keeps the direct draw path below.
+    /// Stable shot and backdrop, reused while annotations change.
     private var stageCache: CGImage?
 
     override var isFlipped: Bool { false }
@@ -84,7 +85,7 @@ final class CanvasView: NSView, NSTextViewDelegate {
             return
         }
         if stageCache == nil {
-            stageCache = try? document.render(includesTextDraft: false)
+            stageCache = try? document.renderStageBackground()
         }
         guard let stage = stageCache else {
             document.draw(in: context, baseInterpolation: isScaled ? .high : .none, includesTextDraft: false)
@@ -94,6 +95,7 @@ final class CanvasView: NSView, NSTextViewDelegate {
         context.interpolationQuality = isScaled ? .high : .none
         context.draw(stage, in: CGRect(origin: .zero, size: bounds.size))
         context.restoreGState()
+        document.drawStageAnnotations(in: context, includesTextDraft: false)
     }
 
     private func drawSelection(in context: CGContext) {
@@ -192,7 +194,6 @@ final class CanvasView: NSView, NSTextViewDelegate {
         let before = document
         if case .toolSelected = action { isPickingColor = false }
         document.apply(action)
-        stageCache = nil
         if document.stageSize != before.stageSize {
             bounds = CGRect(origin: .zero, size: document.stageSize)
             onStageChange?(before)

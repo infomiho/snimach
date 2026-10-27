@@ -356,8 +356,7 @@ public struct Document {
         dragTip = nil
     }
 
-    /// The single rendering path. Draws the base shot, committed annotations and the in-progress
-    /// arrow preview. The caller must not draw the shot itself.
+    /// Draws the base shot, committed annotations and the in-progress preview.
     public func draw(in context: CGContext, baseInterpolation: CGInterpolationQuality = .none, includesTextDraft: Bool = true) {
         context.saveGState()
         defer { context.restoreGState() }
@@ -369,6 +368,10 @@ public struct Document {
         context.draw(shot.image, in: CGRect(origin: .zero, size: pointSize))
         context.restoreGState()
 
+        drawAnnotations(in: context, includesTextDraft: includesTextDraft)
+    }
+
+    private func drawAnnotations(in context: CGContext, includesTextDraft: Bool) {
         for (index, annotation) in annotations.enumerated() where index != editedTextIndex {
             draw(annotation, in: context)
         }
@@ -378,6 +381,24 @@ public struct Document {
         if tool != .select, let origin = dragOrigin, let tip = dragTip {
             draw(preview(from: origin, to: tip).colored(drawingColor), in: context)
         }
+    }
+
+    public func renderStageBackground() throws -> CGImage {
+        guard backdrop == .solid else { return shot.image }
+        return try renderBackdrop(content: shot.image)
+    }
+
+    public func drawStageAnnotations(in context: CGContext, includesTextDraft: Bool = true) {
+        context.saveGState()
+        defer { context.restoreGState() }
+        if backdrop == .solid {
+            let card = CGRect(origin: stageOrigin, size: pointSize)
+            context.addPath(CGPath(roundedRect: card, cornerWidth: Style.backdrop.radius,
+                                   cornerHeight: Style.backdrop.radius, transform: nil))
+            context.clip()
+            context.translateBy(x: stageOrigin.x, y: stageOrigin.y)
+        }
+        drawAnnotations(in: context, includesTextDraft: includesTextDraft)
     }
 
     /// Base shot plus committed annotations as one image at `shot.scale`. With a solid
