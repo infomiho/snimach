@@ -109,9 +109,21 @@ final class AnnotationStyleShelf: EditorSurface {
                 NSBezierPath(roundedRect: rect, xRadius: 5, yRadius: 5).fill()
                 foreground = NSColor(cgColor: TextAnnotation(text: "Aa", origin: .zero, color: color, background: .solid).foregroundColor) ?? .white
             } else {
-                let neutral: NSColor = color == .white ? .darkGray : .lightGray
-                neutral.setFill()
-                NSBezierPath(roundedRect: rect, xRadius: 5, yRadius: 5).fill()
+                let contrast = TextAnnotation(text: "Aa", origin: .zero, color: color, background: .solid).foregroundColor
+                let dark = (contrast.components?.first ?? 1) == 0
+                let base: CGFloat = dark ? 0.20 : 0.88
+                NSGraphicsContext.saveGraphicsState()
+                NSBezierPath(roundedRect: rect, xRadius: 5, yRadius: 5).addClip()
+                NSColor(white: base, alpha: 1).setFill()
+                rect.fill()
+                NSColor(white: dark ? 0.27 : 0.80, alpha: 1).setFill()
+                let cell: CGFloat = 5
+                for row in 0..<5 {
+                    for column in 0..<7 where (row + column).isMultiple(of: 2) {
+                        CGRect(x: CGFloat(column) * cell, y: CGFloat(row) * cell, width: cell, height: cell).fill()
+                    }
+                }
+                NSGraphicsContext.restoreGraphicsState()
                 foreground = NSColor(cgColor: color.cgColor) ?? .labelColor
             }
             let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: foreground]
