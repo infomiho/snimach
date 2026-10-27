@@ -65,7 +65,7 @@ OS behaviors a test would only mock, run before shipping a build.
     between the top and bottom when the pointer approaches, then stays still after selection. Hover
     previews a color. Click to freeze it, move across other pixels, and verify Copy still copies
     the selection. Clicking another pixel replaces it. ⌘C copies the hex without closing the
-    editor, including when a button has focus. Tab navigates controls. Escape returns to drawing
-    before discarding. Reentering inspection starts a fresh preview.
+    editor, including when a button has focus. Tab navigates controls. Escape leaves inspection,
+    then returns to Select without closing the screenshot. Reentering inspection starts a fresh preview.
 18. With a toolbar button focused, drawing shortcuts, undo, redo, copy and save still work.
     Controls and tooltips stay legible in light and dark appearance.

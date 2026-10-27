@@ -5,6 +5,21 @@ import XCTest
 
 @MainActor
 final class EditorTextTests: XCTestCase {
+    func testEscapeCancelsTextDraftAndReturnsToSelect() throws {
+        let controller = EditorWindowController(document: Document(shot: makeTestShot()))
+        controller.show()
+        defer { controller.close() }
+        controller.canvas.apply(.toolSelected(.text))
+        controller.canvas.apply(.pointerDown(CGPoint(x: 5, y: 10)))
+        let editor = try XCTUnwrap(controller.canvas.textEditor)
+        editor.insertText("Draft", replacementRange: NSRange(location: NSNotFound, length: 0))
+        try send("\u{1b}", code: 53, to: controller)
+        XCTAssertNil(controller.document.textDraft)
+        XCTAssertTrue(controller.document.annotations.isEmpty)
+        XCTAssertEqual(controller.document.tool, .select)
+        XCTAssertTrue(controller.panel.firstResponder === controller.canvas)
+    }
+
     func testTypingKeepsToolKeysAndReturnInsideTextEditor() throws {
         let controller = EditorWindowController(document: Document(shot: makeTestShot(frame: CGRect(x: 100, y: 100, width: 400, height: 300))))
         controller.show()

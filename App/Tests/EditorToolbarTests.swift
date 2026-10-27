@@ -5,6 +5,21 @@ import XCTest
 
 @MainActor
 final class EditorToolbarTests: XCTestCase {
+    func testEscapeReturnsToSelectWithoutDiscardingScreenshot() throws {
+        let controller = makeEditor()
+        var discarded = false
+        controller.onFinish = { if case .discard = $0 { discarded = true } }
+        for tool in [Tool.arrow, .line, .rectangle, .number, .redact, .text] {
+            controller.canvas.apply(.toolSelected(tool))
+            try press(53, in: controller)
+            XCTAssertEqual(controller.document.tool, .select)
+            XCTAssertFalse(discarded)
+        }
+        try press(53, in: controller)
+        XCTAssertEqual(controller.document.tool, .select)
+        XCTAssertFalse(discarded)
+    }
+
     func testSelectShortcutMovesDeletesAndEscapesBeforeDiscarding() throws {
         let controller = makeEditor()
         var discarded = false
@@ -291,7 +306,7 @@ final class EditorToolbarTests: XCTestCase {
         XCTAssertTrue(controller.panel.firstResponder === controller.canvas)
     }
 
-    func testPickerIsAnExclusiveModeAndEscapeLeavesItBeforeDiscarding() throws {
+    func testPickerIsAnExclusiveModeAndEscapeLeavesItBeforeSelecting() throws {
         let controller = makeEditor()
         var discarded = false
         controller.onFinish = { if case .discard = $0 { discarded = true } }
@@ -305,7 +320,8 @@ final class EditorToolbarTests: XCTestCase {
         XCTAssertTrue(controller.readout.isHidden)
         XCTAssertFalse(discarded)
         try press(53, in: controller)
-        XCTAssertTrue(discarded)
+        XCTAssertEqual(controller.document.tool, .select)
+        XCTAssertFalse(discarded)
     }
 
     func testSelectingToolLeavesPickerMode() throws {

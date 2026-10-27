@@ -243,7 +243,7 @@ final class EditorWindowController: NSObject, EditorController {
                 canvas.isPickingColor = false
                 refreshChrome()
             } else {
-                finish(.discard)
+                canvas.apply(.toolSelected(.select))
             }
         case .copyHex:
             if canvas.isPickingColor { copyCurrentHex() }

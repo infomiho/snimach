@@ -221,7 +221,10 @@ final class CanvasView: NSView, NSTextViewDelegate {
         textEditor = editor
         editor.delegate = self
         editor.onFinish = { [weak self] in self?.apply(.finishText) }
-        editor.onCancel = { [weak self] in self?.apply(.cancelText) }
+        editor.onCancel = { [weak self] in
+            self?.apply(.cancelText)
+            self?.apply(.toolSelected(.select))
+        }
         editor.update(draft, stageOrigin: document.stageOrigin)
         addSubview(editor)
         window?.makeFirstResponder(editor)
@@ -243,10 +246,6 @@ final class CanvasView: NSView, NSTextViewDelegate {
             return true
         }
         if key == .copyHex && !isPickingColor { return false }
-        if key == .discard && document.selectedIndex != nil && !isPickingColor {
-            apply(.deselect)
-            return true
-        }
         switch key {
         case .selectText: apply(.toolSelected(.text))
         case .selectLine: apply(.toolSelected(.line))
