@@ -17,6 +17,7 @@ public struct Document {
     public private(set) var drawingColor: AnnotationColor = .orange
     public private(set) var selectedIndex: Int?
 
+    public private(set) var drawingTextBackground: TextBackground = .none
     public private(set) var drawingTextSize: TextSize = .medium
     public private(set) var textDraft: TextAnnotation?
     private var editedTextIndex: Int?
@@ -55,6 +56,15 @@ public struct Document {
         backdrop == .transparent
             ? .zero
             : CGPoint(x: Style.backdrop.padding, y: Style.backdrop.padding)
+    }
+
+    public var activeTextBackground: TextBackground? {
+        if let draft = textDraft { return draft.background }
+        if let index = selectedIndex {
+            if case .text(let text) = annotations[index] { return text.background }
+            return nil
+        }
+        return tool == .text ? drawingTextBackground : nil
     }
 
     public var activeTextSize: TextSize? {
@@ -154,6 +164,19 @@ public struct Document {
 
         case .backdropPresetSelected(let preset):
             backdropPreset = preset
+
+        case .textBackgroundSelected(let background):
+            cancelDrag()
+            drawingTextBackground = background
+            if textDraft != nil {
+                textDraft?.background = background
+            } else if let index = selectedIndex {
+                guard case .text(var text) = annotations[index], text.background != background else { return }
+                undoStack.append(annotations)
+                text.background = background
+                annotations[index] = .text(text)
+                redoStack.removeAll()
+            }
 
         case .textSizeSelected(let size):
             cancelDrag()
@@ -257,7 +280,7 @@ public struct Document {
         } else if creating {
             editedTextIndex = nil
             selectedIndex = nil
-            textDraft = TextAnnotation(text: "", origin: point, size: drawingTextSize, color: drawingColor)
+            textDraft = TextAnnotation(text: "", origin: point, size: drawingTextSize, color: drawingColor, background: drawingTextBackground)
         }
     }
 
@@ -481,6 +504,12 @@ public struct Document {
         switch annotation {
         case .text(let text):
             context.saveGState()
+            if text.background == .solid {
+                context.setFillColor(text.color.cgColor)
+                let radius = TextAnnotation.backgroundCornerRadius
+                context.addPath(CGPath(roundedRect: text.bounds, cornerWidth: radius, cornerHeight: radius, transform: nil))
+                context.fillPath()
+            }
             context.textMatrix = .identity
             let ascent = CTFontGetAscent(text.size.font)
             for (index, line) in text.lines.enumerated() {

@@ -28,14 +28,84 @@ final class EditorToolbarTests: XCTestCase {
         XCTAssertEqual(controller.document.annotations.count, 1)
     }
 
+    func testColorButtonOpensStyleShelfAndEscapeDismissesIt() throws {
+        let controller = makeEditor()
+        var discarded = false
+        controller.onFinish = { if case .discard = $0 { discarded = true } }
+        controller.accessoryBar.colorButton.performClick(nil)
+        let shelf = try XCTUnwrap(controller.panel.contentView?.subviews.first {
+            $0.accessibilityLabel() == "Annotation style"
+        })
+        XCTAssertFalse(shelf.isHidden)
+        try press(53, in: controller)
+        XCTAssertTrue(shelf.isHidden)
+        XCTAssertFalse(discarded)
+    }
+
+    func testEscapeReturnsFocusFromShelfToTextDraft() throws {
+        let controller = makeEditor()
+        controller.show()
+        defer { controller.close() }
+        controller.canvas.apply(.toolSelected(.text))
+        controller.canvas.apply(.pointerDown(CGPoint(x: 30, y: 220)))
+        let editor = try XCTUnwrap(controller.canvas.textEditor)
+        controller.accessoryBar.colorButton.performClick(nil)
+        let button = controller.styleShelf.colorButtons[0]
+        XCTAssertTrue(controller.panel.makeFirstResponder(button))
+        XCTAssertTrue(controller.panel.firstResponder === button)
+        let escape = try XCTUnwrap(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [],
+            timestamp: 0, windowNumber: controller.panel.windowNumber, context: nil,
+            characters: "\u{1b}", charactersIgnoringModifiers: "\u{1b}", isARepeat: false, keyCode: 53))
+        controller.panel.sendEvent(escape)
+        XCTAssertTrue(controller.styleShelf.isHidden)
+        XCTAssertTrue(controller.panel.firstResponder === editor)
+    }
+
+    func testUnavailableStyleClosesShelfAndClearsButtonState() {
+        let controller = makeEditor()
+        controller.accessoryBar.colorButton.performClick(nil)
+        XCTAssertEqual(controller.accessoryBar.colorButton.state, .on)
+        controller.canvas.apply(.toolSelected(.redact))
+        XCTAssertTrue(controller.styleShelf.isHidden)
+        XCTAssertEqual(controller.accessoryBar.colorButton.state, .off)
+    }
+
+    func testStyleShelfAndBackdropPopoverAreExclusive() {
+        let controller = makeEditor()
+        controller.show()
+        defer { controller.close() }
+        controller.accessoryBar.colorButton.performClick(nil)
+        controller.accessoryBar.presetsButton.performClick(nil)
+        XCTAssertTrue(controller.backdropPopover.isShown)
+        XCTAssertTrue(controller.styleShelf.isHidden)
+        controller.accessoryBar.colorButton.performClick(nil)
+        XCTAssertFalse(controller.backdropPopover.isShown)
+        XCTAssertFalse(controller.styleShelf.isHidden)
+    }
+
+    func testTextStyleShelfFitsNarrowEditorWithoutOverlappingControls() {
+        let controller = makeEditor()
+        controller.canvas.apply(.toolSelected(.text))
+        let shelf = controller.styleShelf
+        let size = shelf.arrange(in: 360)
+        let buttons = shelf.colorButtons + shelf.sizeButtons + shelf.backgroundButtons
+        XCTAssertLessThanOrEqual(size.width, 360 - EditorStyle.inset * 2)
+        for (index, button) in buttons.enumerated() {
+            XCTAssertTrue(CGRect(origin: .zero, size: size).contains(button.frame))
+            for other in buttons.dropFirst(index + 1) {
+                XCTAssertFalse(button.frame.intersects(other.frame))
+            }
+        }
+    }
+
     func testLineShortcutAndPaletteEditSelectedMark() throws {
         let controller = makeEditor()
         try press(37, in: controller)
         XCTAssertEqual(controller.document.tool, .line)
         controller.canvas.apply(.pointerDown(CGPoint(x: 5, y: 10)))
         controller.canvas.apply(.pointerUp(CGPoint(x: 30, y: 10)))
-        let blue = try XCTUnwrap(controller.accessoryBar.colorMenu.items.first { $0.title == "Blue" })
-        NSApp.sendAction(try XCTUnwrap(blue.action), to: blue.target, from: blue)
+        controller.accessoryBar.colorButton.performClick(nil)
+        controller.styleShelf.colorButtons[AnnotationColor.allCases.firstIndex(of: .blue)!].performClick(nil)
         XCTAssertEqual(controller.document.annotations.first?.color, .blue)
         XCTAssertEqual(controller.document.tool, .line)
         controller.canvas.apply(.toolSelected(.redact))

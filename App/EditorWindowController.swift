@@ -28,6 +28,7 @@ final class EditorWindowController: NSObject, EditorController {
     let canvas: CanvasView
     let accessoryBar = EditorAccessoryBar(frame: .zero)
     let readout = ColorReadoutView(frame: .zero)
+    let styleShelf = AnnotationStyleShelf(frame: .zero)
     let backdropPicker = BackdropPickerView()
     let backdropPopover = NSPopover()
     private(set) var currentHex: String?
@@ -47,7 +48,7 @@ final class EditorWindowController: NSObject, EditorController {
         panel = EditorPanel(contentRect: CGRect(origin: .zero, size: layout.contentSize),
                             styleMask: EditorLayout.style, backing: .buffered, defer: false)
         canvas = CanvasView(document: document)
-        stage = EditorStageView(canvas: canvas, accessoryBar: accessoryBar, readout: readout)
+        stage = EditorStageView(canvas: canvas, accessoryBar: accessoryBar, readout: readout, styleShelf: styleShelf)
         super.init()
         panel.title = "Snimach"
         panel.toolbarStyle = .unified
@@ -93,8 +94,23 @@ final class EditorWindowController: NSObject, EditorController {
             self?.focusCanvas()
         }
         panel.annotationStyleButton = accessoryBar.colorButton
-        accessoryBar.onTextSize = { [weak self] size in self?.canvas.apply(.textSizeSelected(size)) }
-        accessoryBar.onColor = { [weak self] color in self?.canvas.apply(.colorSelected(color)) }
+        panel.annotationStyleShelf = styleShelf
+        panel.onDismissStyleShelf = { [weak self] in
+            guard let self else { return }
+            self.styleShelf.isHidden = true
+            self.accessoryBar.colorButton.state = .off
+            self.panel.makeFirstResponder(self.canvas.textEditor ?? self.canvas)
+        }
+        accessoryBar.colorButton.onPress = { [weak self] in
+            guard let self else { return }
+            self.dismissPresets()
+            self.styleShelf.isHidden.toggle()
+            self.accessoryBar.colorButton.state = self.styleShelf.isHidden ? .off : .on
+            self.stage.needsLayout = true
+        }
+        styleShelf.onSize = { [weak self] size in self?.canvas.apply(.textSizeSelected(size)) }
+        styleShelf.onColor = { [weak self] color in self?.canvas.apply(.colorSelected(color)) }
+        styleShelf.onBackground = { [weak self] background in self?.canvas.apply(.textBackgroundSelected(background)) }
         accessoryBar.undoButton.onPress = { [weak self] in self?.canvas.apply(.undo) }
         accessoryBar.redoButton.onPress = { [weak self] in self?.canvas.apply(.redo) }
         accessoryBar.backdropButton.onPress = { [weak self] in self?.toggleBackdrop() }
@@ -137,6 +153,11 @@ final class EditorWindowController: NSObject, EditorController {
 
     private func refreshChrome() {
         accessoryBar.update(document: document, picking: canvas.isPickingColor)
+        styleShelf.update(document: document)
+        if document.activeColor == nil || canvas.isPickingColor {
+            styleShelf.isHidden = true
+            accessoryBar.colorButton.state = .off
+        }
         readout.isHidden = !canvas.isPickingColor
         backdropPicker.update(preset: document.backdropPreset, active: document.backdrop == .solid)
         stage.needsLayout = true
@@ -179,6 +200,8 @@ final class EditorWindowController: NSObject, EditorController {
             dismissPresets()
             return
         }
+        styleShelf.isHidden = true
+        accessoryBar.colorButton.state = .off
         canvas.isPickingColor = false
         refreshChrome()
         backdropPopover.animates = !EditorStyle.reducesMotion
@@ -194,6 +217,7 @@ final class EditorWindowController: NSObject, EditorController {
     }
 
     private func dismissPresets() {
+        backdropPopover.animates = false
         backdropPopover.close()
         accessoryBar.presetsButton.state = .off
     }
@@ -210,7 +234,10 @@ final class EditorWindowController: NSObject, EditorController {
             guard let image = render() else { return }
             finish(.saveAndCopy(image))
         case .discard:
-            if backdropPopover.isShown {
+            if !styleShelf.isHidden {
+                styleShelf.isHidden = true
+                accessoryBar.colorButton.state = .off
+            } else if backdropPopover.isShown {
                 dismissPresets()
             } else if canvas.isPickingColor {
                 canvas.isPickingColor = false
@@ -339,6 +366,8 @@ extension EditorWindowController: NSToolbarDelegate {
 final class EditorPanel: NSPanel {
     weak var canvas: CanvasView?
     weak var annotationStyleButton: NSView?
+    weak var annotationStyleShelf: NSView?
+    var onDismissStyleShelf: (() -> Void)?
 
     override func sendEvent(_ event: NSEvent) {
         if event.type == .leftMouseDown, let canvas, canvas.textEditor != nil {
@@ -346,7 +375,13 @@ final class EditorPanel: NSPanel {
             let styling = annotationStyleButton.map { button in
                 button.bounds.contains(button.convert(event.locationInWindow, from: nil))
             } ?? false
-            if !canvas.bounds.contains(location) && !styling { canvas.apply(.finishText) }
+            let inShelf = annotationStyleShelf.map { !$0.isHidden && $0.bounds.contains($0.convert(event.locationInWindow, from: nil)) } ?? false
+            if !canvas.bounds.contains(location) && !styling && !inShelf { canvas.apply(.finishText) }
+        }
+        if event.type == .keyDown, event.keyCode == 53, event.modifierFlags.intersection([.command, .shift, .control, .option]).isEmpty,
+           annotationStyleShelf?.isHidden == false {
+            onDismissStyleShelf?()
+            return
         }
         if event.type == .keyDown, let canvas {
             if canvas.handle(event) { return }

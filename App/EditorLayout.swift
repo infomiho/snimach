@@ -50,17 +50,20 @@ final class EditorStageView: NSView {
     let canvas: CanvasView
     let accessoryBar: EditorAccessoryBar
     let readout: ColorReadoutView
+    let styleShelf: AnnotationStyleShelf
     private var transitionImage: NSImageView?
     private var readoutAtTop = true
 
-    init(canvas: CanvasView, accessoryBar: EditorAccessoryBar, readout: ColorReadoutView) {
+    init(canvas: CanvasView, accessoryBar: EditorAccessoryBar, readout: ColorReadoutView, styleShelf: AnnotationStyleShelf) {
         self.canvas = canvas
         self.accessoryBar = accessoryBar
         self.readout = readout
+        self.styleShelf = styleShelf
         super.init(frame: .zero)
         wantsLayer = true
         addSubview(canvas)
         addSubview(accessoryBar)
+        addSubview(styleShelf)
         addSubview(readout)
     }
 
@@ -81,6 +84,8 @@ final class EditorStageView: NSView {
         super.layout()
         let barSize = accessoryBar.arrange(in: bounds.width)
         accessoryBar.frame.origin = CGPoint(x: ((bounds.width - barSize.width) / 2).rounded(), y: EditorStyle.toolbarBottomInset)
+        let shelfSize = styleShelf.arrange(in: bounds.width)
+        styleShelf.frame.origin = CGPoint(x: ((bounds.width - shelfSize.width) / 2).rounded(), y: accessoryBar.frame.maxY + 8)
         positionReadout()
         canvas.frame = EditorLayout.canvasFrame(for: canvas.document.stageSize, in: bounds.size)
     }

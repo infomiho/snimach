@@ -36,7 +36,9 @@ Files, one type each:
 - `EditorLayout.swift`: fits and centers the stage without upscaling. `EditorStageView` overlays
   the accessory bar and color chip, and transitions backdrop changes inside a fixed window.
 - `EditorControls.swift`: native material surface, Solar icon buttons, grouped editing controls,
-  an annotation color menu with contextual text sizes, and an overflow menu that keeps the active tool visible.
+  a style shelf trigger and an overflow menu that keeps the active tool visible.
+- `AnnotationStyleShelf.swift`: six color swatches with contextual text size and background previews.
+  The shelf wraps at narrow widths and preserves text input focus while styling.
 - `BackdropPickerView.swift`: eleven named preset buttons in an anchored native popover.
 - `ColorReadoutView.swift`: sampled color, hex, copy button and confirmation.
 - `PreviewWindowController.swift`: `PreviewLayout` (pure: thumbnail fit, footer strip and bottom-right corner frame), `PreviewWindowController` (borderless non-activating `NSPanel`, slides in from the right edge, fades out after 5 s, hover pauses the clock and leaves 2 s after exit) and `PreviewCardView` (rounded bordered card with the shot as layer contents, pointing-hand cursor, footer strip with Open plus Save plus Discard). Reports one `PreviewOutcome` (`.edit` on click or Open, `.save` on Save, `.dismiss` on timeout or X) through a closure, then closes.

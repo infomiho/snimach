@@ -28,7 +28,7 @@ final class EditorTextTests: XCTestCase {
         XCTAssertTrue(controller.document.annotations.isEmpty)
     }
 
-    func testTextSizeMenuUpdatesDraftAndSelectedTextWithUndo() throws {
+    func testTextSizeShelfUpdatesDraftAndSelectedTextWithUndo() throws {
         let controller = EditorWindowController(document: Document(shot: makeTestShot(frame: CGRect(x: 100, y: 100, width: 400, height: 300))))
         controller.show()
         defer { controller.close() }
@@ -36,19 +36,36 @@ final class EditorTextTests: XCTestCase {
         controller.canvas.apply(.pointerDown(CGPoint(x: 30, y: 220)))
         let editor = try XCTUnwrap(controller.panel.firstResponder as? NSTextView)
         editor.insertText("Label", replacementRange: NSRange(location: NSNotFound, length: 0))
-        let large = try XCTUnwrap(controller.accessoryBar.textSizeMenu.item(withTitle: "Large"))
-        NSApp.sendAction(try XCTUnwrap(large.action), to: large.target, from: large)
+        controller.accessoryBar.colorButton.performClick(nil)
+        controller.styleShelf.sizeButtons[TextSize.allCases.firstIndex(of: .large)!].performClick(nil)
         XCTAssertEqual(editor.font?.pointSize, 32)
         XCTAssertEqual(controller.document.textDraft?.size, .large)
         try send("\r", code: 36, modifiers: .command, to: controller)
-        let small = try XCTUnwrap(controller.accessoryBar.textSizeMenu.item(withTitle: "Small"))
-        NSApp.sendAction(try XCTUnwrap(small.action), to: small.target, from: small)
+        controller.styleShelf.sizeButtons[TextSize.allCases.firstIndex(of: .small)!].performClick(nil)
         XCTAssertEqual(controller.document.activeTextSize, .small)
         controller.canvas.apply(.undo)
         controller.canvas.apply(.toolSelected(.select))
         controller.canvas.apply(.pointerDown(CGPoint(x: 35, y: 205)))
         controller.canvas.apply(.pointerUp(CGPoint(x: 35, y: 205)))
         XCTAssertEqual(controller.document.activeTextSize, .large)
+    }
+
+    func testShelfChangesDraftBackgroundAndKeepsEditing() throws {
+        let controller = EditorWindowController(document: Document(shot: makeTestShot(frame: CGRect(x: 100, y: 100, width: 400, height: 300))))
+        controller.show()
+        defer { controller.close() }
+        controller.canvas.apply(.toolSelected(.text))
+        controller.canvas.apply(.pointerDown(CGPoint(x: 30, y: 220)))
+        let editor = try XCTUnwrap(controller.panel.firstResponder as? NSTextView)
+        editor.insertText("Label", replacementRange: NSRange(location: NSNotFound, length: 0))
+        controller.accessoryBar.colorButton.performClick(nil)
+        controller.styleShelf.backgroundButtons[TextBackground.allCases.firstIndex(of: .solid)!].performClick(nil)
+        XCTAssertEqual(controller.document.textDraft?.background, .solid)
+        XCTAssertTrue(controller.panel.firstResponder === editor)
+        XCTAssertFalse(controller.styleShelf.isHidden)
+        try send("\u{1b}", code: 53, to: controller)
+        XCTAssertTrue(controller.styleShelf.isHidden)
+        XCTAssertNotNil(controller.document.textDraft)
     }
 
     func testPaletteClickKeepsTextDraftAndFocus() throws {

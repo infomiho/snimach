@@ -18,6 +18,8 @@ backdrop. Its public state includes `annotations`, `selectedIndex`, `selectionBo
 - `deselect`, `deleteSelection` and `nudgeSelection` edit the selected object.
 - `colorSelected` changes the selected object or draft and remembers that color for future
   annotations across tools. Redactions have no decorative color.
+- `textBackgroundSelected` switches text between transparent and solid backing, and remembers
+  the choice for future text. Solid uses the chosen color with contrasting glyphs.
 - `textSizeSelected` changes selected text or a draft. Without a selection it sets the next
   text size.
 - `editText` opens existing text at a point. The Text tool also opens existing text, or starts
@@ -28,7 +30,7 @@ backdrop. Its public state includes `annotations`, `selectedIndex`, `selectionBo
 
 Annotations are arrows, lines, numbered badges, rectangles, redactions and text. Decorative
 annotations store their own color. `TextAnnotation` stores the string, top-left origin, size
-and color. `AnnotationColor` defines six presets. `TextSize` defines 16, 24 and 32 point text in
+and color, plus its background mode. `AnnotationColor` defines six presets. `TextSize` defines 16, 24 and 32 point text in
 one system font.
 
 ## Selection and gestures

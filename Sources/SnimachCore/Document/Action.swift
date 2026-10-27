@@ -26,6 +26,7 @@ public enum Action: Equatable {
     /// Backdrop mode or preset picked in the editor. Chrome, never undoable.
     case backdropSelected(BackdropMode)
     case backdropPresetSelected(BackdropPreset)
+    case textBackgroundSelected(TextBackground)
     case textSizeSelected(TextSize)
     case textChanged(String)
     case editText(CGPoint)

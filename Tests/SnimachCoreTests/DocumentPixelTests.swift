@@ -54,6 +54,25 @@ final class DocumentPixelTests: XCTestCase {
         XCTAssertGreaterThan(bitmap(try document.render(), scale: 2).count(of: AnnotationColor.blue.cgColor), 20)
     }
 
+    func testSolidTextBackgroundUsesChosenColorAndUndoRemovesIt() throws {
+        var document = makeDocument(pointSize: CGSize(width: 160, height: 120))
+        document.apply(.toolSelected(.text))
+        document.apply(.pointerDown(CGPoint(x: 30, y: 90)))
+        document.apply(.textChanged("Label"))
+        document.apply(.colorSelected(.blue))
+        document.apply(.finishText)
+        document.apply(.textBackgroundSelected(.solid))
+        let sample = CGPoint(x: 27, y: 80)
+        let rendered = bitmap(try document.render(), scale: 2)
+        assertNear(rendered.pixel(at: sample), AnnotationColor.blue.cgColor)
+        XCTAssertGreaterThan(rendered.count(of: AnnotationColor.white.cgColor), 20)
+        XCTAssertEqual(document.activeTextBackground, .solid)
+        document.apply(.undo)
+        assertNear(bitmap(try document.render(), scale: 2).pixel(at: sample), baseColor)
+        document.apply(.redo)
+        assertNear(bitmap(try document.render(), scale: 2).pixel(at: sample), AnnotationColor.blue.cgColor)
+    }
+
     private let baseColor = CGColor(srgbRed: 0.5, green: 0.5, blue: 0.5, alpha: 1)
 
     private func makeDocument(pointSize: CGSize = CGSize(width: 60, height: 40), scale: CGFloat = 2) -> Document {

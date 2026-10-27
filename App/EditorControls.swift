@@ -58,7 +58,7 @@ class EditorSurface: NSVisualEffectView {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 }
 
-final class EditorButton: NSButton {
+class EditorButton: NSButton {
     enum Segment { case leading, trailing }
     var segment: Segment?
     var segmentActive = false { didSet { needsDisplay = true } }
@@ -177,12 +177,6 @@ struct ToolChoice {
 
 final class EditorAccessoryBar: EditorSurface {
     let colorButton = EditorButton(label: "Annotation color")
-    let colorMenu = NSMenu()
-    let textSizeMenu = NSMenu()
-    private let textSizeItem = NSMenuItem(title: "Text size", action: nil, keyEquivalent: "")
-    private let textSizeSeparator = NSMenuItem.separator()
-    var onTextSize: ((TextSize) -> Void)?
-    var onColor: ((AnnotationColor) -> Void)?
     let undoButton = EditorButton(icon: "undo-left-linear", label: "Undo", shortcut: "⌘Z")
     let redoButton = EditorButton(icon: "undo-right-linear", label: "Redo", shortcut: "⇧⌘Z")
     let backdropButton = EditorButton(label: "Backdrop", shortcut: "K")
@@ -216,26 +210,6 @@ final class EditorAccessoryBar: EditorSurface {
         backdropButton.imagePosition = .imageLeading
         backdropButton.segment = .leading
         presetsButton.segment = .trailing
-        colorButton.onPress = { [weak self] in
-            guard let self else { return }
-            colorMenu.popUp(positioning: nil, at: CGPoint(x: 0, y: colorButton.bounds.maxY + 6), in: colorButton)
-        }
-        for (index, color) in AnnotationColor.allCases.enumerated() {
-            let item = NSMenuItem(title: color.name, action: #selector(selectColor(_:)), keyEquivalent: "")
-            item.target = self
-            item.tag = index
-            item.image = Self.colorSwatch(color)
-            colorMenu.addItem(item)
-        }
-        colorMenu.addItem(textSizeSeparator)
-        textSizeItem.submenu = textSizeMenu
-        colorMenu.addItem(textSizeItem)
-        for (index, size) in TextSize.allCases.enumerated() {
-            let item = NSMenuItem(title: size.name, action: #selector(selectTextSize(_:)), keyEquivalent: "")
-            item.target = self
-            item.tag = index
-            textSizeMenu.addItem(item)
-        }
         moreButton.onPress = { [weak self] in self?.showMoreTools() }
     }
 
@@ -246,17 +220,8 @@ final class EditorAccessoryBar: EditorSurface {
         colorButton.isEnabled = document.activeColor != nil && !picking
         colorButton.image = Self.colorSwatch(document.activeColor ?? document.drawingColor)
         colorButton.setAccessibilityValue(document.activeColor?.name ?? "Unavailable")
-        let hasTextSize = document.activeTextSize != nil
-        textSizeItem.isHidden = !hasTextSize
-        textSizeSeparator.isHidden = !hasTextSize
-        colorButton.toolTip = hasTextSize ? "Text color and size" : "Annotation color"
-        colorButton.setAccessibilityLabel(hasTextSize ? "Text color and size" : "Annotation color")
-        for (index, item) in textSizeMenu.items.enumerated() {
-            item.state = TextSize.allCases[index] == document.activeTextSize ? .on : .off
-        }
-        for (index, item) in colorMenu.items.prefix(AnnotationColor.allCases.count).enumerated() {
-            item.state = AnnotationColor.allCases[index] == document.activeColor ? .on : .off
-        }
+        colorButton.toolTip = document.activeTextSize != nil ? "Text style" : "Annotation color"
+        colorButton.setAccessibilityLabel(document.activeTextSize != nil ? "Text style" : "Annotation color")
         self.picking = picking
         undoButton.isEnabled = document.canUndo
         redoButton.isEnabled = document.canRedo
@@ -335,14 +300,6 @@ final class EditorAccessoryBar: EditorSurface {
             circle.stroke()
             return true
         }
-    }
-
-    @objc private func selectTextSize(_ sender: NSMenuItem) {
-        onTextSize?(TextSize.allCases[sender.tag])
-    }
-
-    @objc private func selectColor(_ sender: NSMenuItem) {
-        onColor?(AnnotationColor.allCases[sender.tag])
     }
 
     private func showMoreTools() {

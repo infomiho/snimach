@@ -51,6 +51,9 @@ final class EditorVisualTests: XCTestCase {
                 controller.canvas.apply(.pointerDown(CGPoint(x: 460, y: 220)))
                 let editor = try XCTUnwrap(controller.panel.firstResponder as? NSTextView)
                 editor.insertText("Release notes\nReady to share", replacementRange: NSRange(location: NSNotFound, length: 0))
+                controller.canvas.apply(.textBackgroundSelected(.solid))
+                if name.contains("compact") { controller.canvas.apply(.colorSelected(.white)) }
+                controller.accessoryBar.colorButton.performClick(nil)
                 if name.contains("committed") { controller.canvas.apply(.finishText) }
                 controller.panel.contentView?.layoutSubtreeIfNeeded()
                 try await Task.sleep(for: .milliseconds(200))
