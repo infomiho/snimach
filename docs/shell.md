@@ -36,15 +36,17 @@ Files, one type each:
 - `EditorLayout.swift`: fits and centers the stage without upscaling. `EditorStageView` overlays
   the accessory bar and color chip, and transitions backdrop changes inside a fixed window.
 - `EditorControls.swift`: native material surface, Solar icon buttons, grouped editing controls,
-  and an overflow menu that keeps the active tool visible.
+  an annotation color menu with contextual text sizes, and an overflow menu that keeps the active tool visible.
 - `BackdropPickerView.swift`: eleven named preset buttons in an anchored native popover.
 - `ColorReadoutView.swift`: sampled color, hex, copy button and confirmation.
 - `PreviewWindowController.swift`: `PreviewLayout` (pure: thumbnail fit, footer strip and bottom-right corner frame), `PreviewWindowController` (borderless non-activating `NSPanel`, slides in from the right edge, fades out after 5 s, hover pauses the clock and leaves 2 s after exit) and `PreviewCardView` (rounded bordered card with the shot as layer contents, pointing-hand cursor, footer strip with Open plus Save plus Discard). Reports one `PreviewOutcome` (`.edit` on click or Open, `.save` on Save, `.dismiss` on timeout or X) through a closure, then closes.
 - `EditorWindowController.swift`: owns the non-activating panel, output actions in its title bar,
   and the floating controls. Reports a single `EditorOutcome` then closes. The close button
-  discards, while Escape first leaves a popover or color inspection mode.
+  discards, while Escape first cancels text editing, clears selection or leaves a temporary mode.
 - `CanvasView.swift`: draws the document and maps pointer positions through the stage scale
   and backdrop padding. Color inspection samples source pixels and suppresses drawing.
+- `AnnotationTextView.swift`: native plain text editing, using the document font sizes and line heights.
+  Return adds a newline, Command-Return finishes and Escape cancels.
 - `EditorKeymap.swift`: pure mapping of physical keys and modifiers to editor actions.
 
 Package dependency: `sindresorhus/KeyboardShortcuts` 3.x. Carbon hotkeys, no permission prompt, sandbox-safe, fires while an NSMenu is open.
@@ -71,7 +73,7 @@ Package dependency: `sindresorhus/KeyboardShortcuts` 3.x. Carbon hotkeys, no per
 
 **Activation.** The editor never calls `NSApp.activate()`. A non-activating panel that can become key receives key events while the app stays inactive, Spotlight style, so closing it returns focus to the previous app with no hide or yield step. Fallback if keys ever fail to arrive: `NSApp.activate()` on show, and on close `NSApp.yieldActivation(to: previous)` then `previous.activate()`, with `previous` read from `NSWorkspace.shared.frontmostApplication` before showing. `activate(ignoringOtherApps:)` is deprecated on macOS 14 and its flag is ignored.
 
-**Key equivalents.** `EditorPanel` routes editor shortcuts before normal responder dispatch, so they work while a toolbar button has focus. Unhandled keys keep native behavior. Tab is reserved for copying only when the canvas has focus in color inspection mode. The native preset popover handles its own focus and dismissal.
+**Key equivalents.** `EditorPanel` routes editor shortcuts before normal responder dispatch, so they work while a toolbar button has focus. While text editing is active, native text input owns letters, Return and clipboard shortcuts. V selects, L draws a line and T edits text. Delete removes selected annotations, arrow keys nudge by one point, and Shift-arrow nudges by ten. Escape cancels text editing before clearing selection or discarding. Tab retains native focus navigation. The preset popover handles its own focus and dismissal.
 
 **Level and Spaces.** `level = .floating`, `collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]`. `fullScreenAuxiliary` lets the panel join a full-screen app's Space, `canJoinAllSpaces` keeps it visible if the user switches Space mid-edit, `transient` and `ignoresCycle` keep it out of Mission Control and Cmd+backtick.
 

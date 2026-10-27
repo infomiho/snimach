@@ -97,10 +97,10 @@ final class EditorToolbarTests: XCTestCase {
         XCTAssertTrue(controller.accessoryBar.superview === stage)
         XCTAssertTrue(controller.canvas.superview === stage)
         controller.accessoryBar.arrange(in: 900)
-        XCTAssertEqual(controller.accessoryBar.visibleTools, [.select, .line, .arrow, .number, .rectangle, .redact])
-        controller.accessoryBar.toolButtons[4].performClick(nil)
+        XCTAssertEqual(controller.accessoryBar.visibleTools, [.select, .text, .line, .arrow, .number, .rectangle, .redact])
+        controller.accessoryBar.toolButtons[5].performClick(nil)
         XCTAssertEqual(controller.document.tool, .rectangle)
-        XCTAssertEqual(controller.accessoryBar.toolButtons[4].state, .on)
+        XCTAssertEqual(controller.accessoryBar.toolButtons[5].state, .on)
         XCTAssertEqual(controller.accessoryBar.toolButtons[0].state, .off)
     }
 
@@ -132,8 +132,8 @@ final class EditorToolbarTests: XCTestCase {
                 XCTAssertEqual(size.height - button.frame.maxY, 8)
             }
         }
-        bar.arrange(in: 520)
-        XCTAssertEqual(bar.visibleTools.count, 6, "Keep tools visible when they fit without the backdrop label")
+        bar.arrange(in: 560)
+        XCTAssertEqual(bar.visibleTools.count, 7, "Keep tools visible when they fit without the backdrop label")
     }
 
     func testColorChipHasEqualOuterPaddingAndNoOverlappingControls() {

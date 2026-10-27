@@ -3,6 +3,7 @@ import CoreGraphics
 /// Committed annotation, in document points. Badge numbers are derived by the document
 /// (1, 2, 3 by commit order among badges) and are always contiguous after undo and redo.
 public enum Annotation: Equatable {
+    case text(TextAnnotation)
     case line(from: CGPoint, to: CGPoint, color: AnnotationColor = .orange)
     case arrow(from: CGPoint, to: CGPoint, color: AnnotationColor = .orange)
     case number(Int, center: CGPoint, color: AnnotationColor = .orange)
@@ -18,6 +19,7 @@ extension Annotation {
         switch self {
         case .arrow(_, _, let color), .line(_, _, let color), .number(_, _, let color), .rectangle(_, let color):
             return color
+        case .text(let text): return text.color
         case .redaction: return nil
         }
     }
@@ -28,12 +30,16 @@ extension Annotation {
         case .line(let from, let to, _): return .line(from: from, to: to, color: color)
         case .number(let value, let center, _): return .number(value, center: center, color: color)
         case .rectangle(let rect, _): return .rectangle(rect, color: color)
+        case .text(var text):
+            text.color = color
+            return .text(text)
         case .redaction: return self
         }
     }
 
     var bounds: CGRect {
         switch self {
+        case .text(let text): return text.bounds
         case .line(let from, let to, _):
             return Geometry.rect(from: from, to: to).insetBy(dx: -2, dy: -2)
         case .arrow(let from, let to, _):
@@ -51,6 +57,9 @@ extension Annotation {
             CGPoint(x: point.x + offset.width, y: point.y + offset.height)
         }
         switch self {
+        case .text(var text):
+            text.origin = moved(text.origin)
+            return .text(text)
         case .line(let from, let to, let color): return .line(from: moved(from), to: moved(to), color: color)
         case .arrow(let from, let to, let color): return .arrow(from: moved(from), to: moved(to), color: color)
         case .number(let value, let center, let color): return .number(value, center: moved(center), color: color)
@@ -74,6 +83,7 @@ extension Annotation {
 
     func contains(_ point: CGPoint) -> Bool {
         switch self {
+        case .text(let text): return text.bounds.insetBy(dx: -3, dy: -3).contains(point)
         case .number(_, let center, _):
             return hypot(point.x - center.x, point.y - center.y) <= Style.standard.badgeRadius + 5
         case .redaction(let rect):

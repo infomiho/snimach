@@ -92,6 +92,8 @@ final class EditorWindowController: NSObject, EditorController {
             self?.canvas.apply(.toolSelected(tool))
             self?.focusCanvas()
         }
+        panel.annotationStyleButton = accessoryBar.colorButton
+        accessoryBar.onTextSize = { [weak self] size in self?.canvas.apply(.textSizeSelected(size)) }
         accessoryBar.onColor = { [weak self] color in self?.canvas.apply(.colorSelected(color)) }
         accessoryBar.undoButton.onPress = { [weak self] in self?.canvas.apply(.undo) }
         accessoryBar.redoButton.onPress = { [weak self] in self?.canvas.apply(.redo) }
@@ -233,6 +235,7 @@ final class EditorWindowController: NSObject, EditorController {
     }
 
     private func render() -> CGImage? {
+        canvas.apply(.finishText)
         do {
             return try document.render()
         } catch {
@@ -335,8 +338,16 @@ extension EditorWindowController: NSToolbarDelegate {
 
 final class EditorPanel: NSPanel {
     weak var canvas: CanvasView?
+    weak var annotationStyleButton: NSView?
 
     override func sendEvent(_ event: NSEvent) {
+        if event.type == .leftMouseDown, let canvas, canvas.textEditor != nil {
+            let location = canvas.convert(event.locationInWindow, from: nil)
+            let styling = annotationStyleButton.map { button in
+                button.bounds.contains(button.convert(event.locationInWindow, from: nil))
+            } ?? false
+            if !canvas.bounds.contains(location) && !styling { canvas.apply(.finishText) }
+        }
         if event.type == .keyDown, let canvas {
             if canvas.handle(event) { return }
         }

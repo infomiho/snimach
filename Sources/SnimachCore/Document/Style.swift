@@ -1,8 +1,6 @@
 import CoreGraphics
 import CoreText
 
-/// The product has no styling, so every visual constant lives here. Tests read these
-/// values through `@testable import` to build expected pixel colours.
 enum Style {
     struct Standard {
         let strokeColor: CGColor

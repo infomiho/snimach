@@ -17,6 +17,9 @@ public struct Document {
     public private(set) var drawingColor: AnnotationColor = .orange
     public private(set) var selectedIndex: Int?
 
+    public private(set) var drawingTextSize: TextSize = .medium
+    public private(set) var textDraft: TextAnnotation?
+    private var editedTextIndex: Int?
     private var movementStart: [Annotation]?
     private var dragOrigin: CGPoint?
     private var dragTip: CGPoint?
@@ -54,13 +57,24 @@ public struct Document {
             : CGPoint(x: Style.backdrop.padding, y: Style.backdrop.padding)
     }
 
+    public var activeTextSize: TextSize? {
+        if let draft = textDraft { return draft.size }
+        if let index = selectedIndex {
+            if case .text(let text) = annotations[index] { return text.size }
+            return nil
+        }
+        return tool == .text ? drawingTextSize : nil
+    }
+
     public var activeColor: AnnotationColor? {
+        if let draft = textDraft { return draft.color }
         if let index = selectedIndex { return annotations[index].color }
         return tool == .redact ? nil : drawingColor
     }
 
     public var selectionBounds: CGRect? {
-        selectedIndex.map { annotations[$0].bounds }
+        guard textDraft == nil else { return nil }
+        return selectedIndex.map { annotations[$0].bounds }
     }
 
     public var canUndo: Bool { !undoStack.isEmpty }
@@ -70,11 +84,17 @@ public struct Document {
     public mutating func apply(_ action: Action) {
         switch action {
         case .toolSelected(let newTool):
+            finishText()
             cancelDrag()
             tool = newTool
             selectedIndex = nil
 
         case .pointerDown(let point):
+            if tool == .text {
+                finishText()
+                beginText(at: point, creating: true)
+                return
+            }
             if tool == .select {
                 cancelDrag()
                 selectedIndex = annotations.indices.reversed().first { annotations[$0].contains(point) }
@@ -95,6 +115,7 @@ public struct Document {
 
         case .pointerUp(let point):
             switch tool {
+            case .text: break
             case .select:
                 moveSelection(to: point)
                 if let previous = movementStart, previous != annotations {
@@ -134,7 +155,39 @@ public struct Document {
         case .backdropPresetSelected(let preset):
             backdropPreset = preset
 
+        case .textSizeSelected(let size):
+            cancelDrag()
+            if textDraft != nil {
+                textDraft?.size = size
+            } else if let index = selectedIndex {
+                guard case .text(var text) = annotations[index], text.size != size else { return }
+                undoStack.append(annotations)
+                text.size = size
+                annotations[index] = .text(text)
+                redoStack.removeAll()
+            } else {
+                drawingTextSize = size
+            }
+
+        case .textChanged(let text):
+            textDraft?.text = text
+
+        case .editText(let point):
+            finishText()
+            beginText(at: point, creating: false)
+
+        case .finishText:
+            finishText()
+
+        case .cancelText:
+            textDraft = nil
+            editedTextIndex = nil
+
         case .colorSelected(let color):
+            if textDraft != nil {
+                textDraft?.color = color
+                return
+            }
             cancelDrag()
             guard let index = selectedIndex else {
                 drawingColor = color
@@ -147,10 +200,12 @@ public struct Document {
             redoStack.removeAll()
 
         case .deselect:
+            finishText()
             cancelDrag()
             selectedIndex = nil
 
         case .nudgeSelection(let offset):
+            finishText()
             cancelDrag()
             guard let index = selectedIndex, offset != .zero else { return }
             undoStack.append(annotations)
@@ -158,6 +213,7 @@ public struct Document {
             redoStack.removeAll()
 
         case .deleteSelection:
+            finishText()
             cancelDrag()
             guard let index = selectedIndex else { return }
             undoStack.append(annotations)
@@ -172,6 +228,11 @@ public struct Document {
             selectedIndex = nil
 
         case .undo:
+            if textDraft != nil {
+                let previous = annotations
+                finishText()
+                guard annotations != previous else { return }
+            }
             cancelDrag()
             guard let previous = undoStack.popLast() else { return }
             redoStack.append(annotations)
@@ -179,11 +240,52 @@ public struct Document {
             selectedIndex = nil
 
         case .redo:
+            finishText()
             cancelDrag()
             guard let next = redoStack.popLast() else { return }
             undoStack.append(annotations)
             annotations = next
             selectedIndex = nil
+        }
+    }
+
+    private mutating func beginText(at point: CGPoint, creating: Bool) {
+        cancelDrag()
+        let hit = annotations.indices.reversed().first { annotations[$0].contains(point) }
+        if let index = hit, case .text(let text) = annotations[index] {
+            editedTextIndex = index
+            selectedIndex = index
+            textDraft = text
+        } else if creating {
+            editedTextIndex = nil
+            selectedIndex = nil
+            textDraft = TextAnnotation(text: "", origin: point, size: drawingTextSize, color: drawingColor)
+        }
+    }
+
+    private mutating func finishText() {
+        guard let draft = textDraft else { return }
+        let index = editedTextIndex
+        textDraft = nil
+        editedTextIndex = nil
+        let empty = draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if let index {
+            let updated = Annotation.text(draft)
+            guard empty || annotations[index] != updated else { return }
+            undoStack.append(annotations)
+            if empty {
+                annotations.remove(at: index)
+                selectedIndex = nil
+            } else {
+                annotations[index] = updated
+                selectedIndex = index
+            }
+            redoStack.removeAll()
+        } else if !empty {
+            undoStack.append(annotations)
+            annotations.append(.text(draft))
+            selectedIndex = annotations.count - 1
+            redoStack.removeAll()
         }
     }
 
@@ -193,7 +295,7 @@ public struct Document {
         case .line: return .line(from: origin, to: tip)
         case .redact: return .redaction(Geometry.rect(from: origin, to: tip))
         case .rectangle: return .rectangle(Geometry.rect(from: origin, to: tip))
-        case .select, .arrow, .number: return arrow(from: origin, to: tip)
+        case .text, .select, .arrow, .number: return arrow(from: origin, to: tip)
         }
     }
 
@@ -235,7 +337,7 @@ public struct Document {
 
     /// The single rendering path. Draws the base shot, committed annotations and the in-progress
     /// arrow preview. The caller must not draw the shot itself.
-    public func draw(in context: CGContext, baseInterpolation: CGInterpolationQuality = .none) {
+    public func draw(in context: CGContext, baseInterpolation: CGInterpolationQuality = .none, includesTextDraft: Bool = true) {
         context.saveGState()
         defer { context.restoreGState() }
 
@@ -246,8 +348,11 @@ public struct Document {
         context.draw(shot.image, in: CGRect(origin: .zero, size: pointSize))
         context.restoreGState()
 
-        for annotation in annotations {
+        for (index, annotation) in annotations.enumerated() where index != editedTextIndex {
             draw(annotation, in: context)
+        }
+        if includesTextDraft, let draft = textDraft {
+            draw(.text(draft), in: context)
         }
         if tool != .select, let origin = dragOrigin, let tip = dragTip {
             draw(preview(from: origin, to: tip).colored(drawingColor), in: context)
@@ -256,9 +361,9 @@ public struct Document {
 
     /// Base shot plus committed annotations as one image at `shot.scale`. With a solid
     /// backdrop the shot is composited onto the preset gradient with padding, rounded
-    /// corners and a shadow. Ignores any in-progress drag. Pure.
-    public func render() throws -> CGImage {
-        let flat = try renderFlat()
+    /// corners and a shadow. Includes live previews without changing document state.
+    public func render(includesTextDraft: Bool = true) throws -> CGImage {
+        let flat = try renderFlat(includesTextDraft: includesTextDraft)
         guard backdrop == .solid else {
             return flat
         }
@@ -266,7 +371,7 @@ public struct Document {
     }
 
     /// Flat render at exactly `shot.image` pixel size. Shared by every backdrop mode.
-    private func renderFlat() throws -> CGImage {
+    private func renderFlat(includesTextDraft: Bool) throws -> CGImage {
         let width = shot.image.width
         let height = shot.image.height
         let bitmapInfo = CGImageAlphaInfo.premultipliedFirst.rawValue
@@ -284,7 +389,7 @@ public struct Document {
         }
 
         context.scaleBy(x: shot.scale, y: shot.scale)
-        draw(in: context)
+        draw(in: context, includesTextDraft: includesTextDraft)
 
         guard let image = context.makeImage() else {
             throw RenderError.bitmapContextUnavailable
@@ -376,6 +481,15 @@ public struct Document {
 
     private func draw(_ annotation: Annotation, in context: CGContext) {
         switch annotation {
+        case .text(let text):
+            context.saveGState()
+            context.textMatrix = .identity
+            let ascent = CTFontGetAscent(text.size.font)
+            for (index, line) in text.lines.enumerated() {
+                context.textPosition = CGPoint(x: text.origin.x, y: text.origin.y - ascent - CGFloat(index) * text.size.lineHeight)
+                CTLineDraw(line, context)
+            }
+            context.restoreGState()
         case .line(let from, let to, let color):
             context.saveGState()
             context.setStrokeColor(color.cgColor)

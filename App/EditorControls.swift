@@ -166,6 +166,7 @@ struct ToolChoice {
 
     static let all: [ToolChoice] = [
         ToolChoice(tool: .select, icon: "cursor-linear", label: "Select", key: "V"),
+        ToolChoice(tool: .text, icon: "text-linear", label: "Text", key: "T"),
         ToolChoice(tool: .line, icon: "minus-linear", label: "Line", key: "L"),
         ToolChoice(tool: .arrow, icon: "arrow-right-up-linear", label: "Arrow", key: "A"),
         ToolChoice(tool: .number, icon: "hashtag-linear", label: "Number", key: "N"),
@@ -177,6 +178,10 @@ struct ToolChoice {
 final class EditorAccessoryBar: EditorSurface {
     let colorButton = EditorButton(label: "Annotation color")
     let colorMenu = NSMenu()
+    let textSizeMenu = NSMenu()
+    private let textSizeItem = NSMenuItem(title: "Text size", action: nil, keyEquivalent: "")
+    private let textSizeSeparator = NSMenuItem.separator()
+    var onTextSize: ((TextSize) -> Void)?
     var onColor: ((AnnotationColor) -> Void)?
     let undoButton = EditorButton(icon: "undo-left-linear", label: "Undo", shortcut: "⌘Z")
     let redoButton = EditorButton(icon: "undo-right-linear", label: "Redo", shortcut: "⇧⌘Z")
@@ -222,6 +227,15 @@ final class EditorAccessoryBar: EditorSurface {
             item.image = Self.colorSwatch(color)
             colorMenu.addItem(item)
         }
+        colorMenu.addItem(textSizeSeparator)
+        textSizeItem.submenu = textSizeMenu
+        colorMenu.addItem(textSizeItem)
+        for (index, size) in TextSize.allCases.enumerated() {
+            let item = NSMenuItem(title: size.name, action: #selector(selectTextSize(_:)), keyEquivalent: "")
+            item.target = self
+            item.tag = index
+            textSizeMenu.addItem(item)
+        }
         moreButton.onPress = { [weak self] in self?.showMoreTools() }
     }
 
@@ -232,7 +246,15 @@ final class EditorAccessoryBar: EditorSurface {
         colorButton.isEnabled = document.activeColor != nil && !picking
         colorButton.image = Self.colorSwatch(document.activeColor ?? document.drawingColor)
         colorButton.setAccessibilityValue(document.activeColor?.name ?? "Unavailable")
-        for (index, item) in colorMenu.items.enumerated() {
+        let hasTextSize = document.activeTextSize != nil
+        textSizeItem.isHidden = !hasTextSize
+        textSizeSeparator.isHidden = !hasTextSize
+        colorButton.toolTip = hasTextSize ? "Text color and size" : "Annotation color"
+        colorButton.setAccessibilityLabel(hasTextSize ? "Text color and size" : "Annotation color")
+        for (index, item) in textSizeMenu.items.enumerated() {
+            item.state = TextSize.allCases[index] == document.activeTextSize ? .on : .off
+        }
+        for (index, item) in colorMenu.items.prefix(AnnotationColor.allCases.count).enumerated() {
             item.state = AnnotationColor.allCases[index] == document.activeColor ? .on : .off
         }
         self.picking = picking
@@ -313,6 +335,10 @@ final class EditorAccessoryBar: EditorSurface {
             circle.stroke()
             return true
         }
+    }
+
+    @objc private func selectTextSize(_ sender: NSMenuItem) {
+        onTextSize?(TextSize.allCases[sender.tag])
     }
 
     @objc private func selectColor(_ sender: NSMenuItem) {

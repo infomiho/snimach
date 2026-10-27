@@ -3,7 +3,8 @@ import SnimachCore
 
 /// The whole adapter between AppKit events and the `Document`. It draws through
 /// `document.draw(in:)` and forwards mouse events as tool-agnostic actions.
-final class CanvasView: NSView {
+final class CanvasView: NSView, NSTextViewDelegate {
+    private(set) var textEditor: AnnotationTextView?
     struct HoverColor {
         let hex: String
         let color: NSColor
@@ -26,7 +27,10 @@ final class CanvasView: NSView {
     var isPickingColor = false {
         didSet {
             isColorFrozen = false
-            if isPickingColor { document.apply(.toolSelected(document.tool)) }
+            if isPickingColor {
+                document.apply(.toolSelected(document.tool))
+                syncTextEditor()
+            }
         }
     }
     private(set) var isColorFrozen = false
@@ -76,14 +80,14 @@ final class CanvasView: NSView {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         defer { drawSelection(in: context) }
         if document.backdrop == .transparent {
-            document.draw(in: context, baseInterpolation: isScaled ? .high : .none)
+            document.draw(in: context, baseInterpolation: isScaled ? .high : .none, includesTextDraft: false)
             return
         }
         if stageCache == nil {
-            stageCache = try? document.render()
+            stageCache = try? document.render(includesTextDraft: false)
         }
         guard let stage = stageCache else {
-            document.draw(in: context, baseInterpolation: isScaled ? .high : .none)
+            document.draw(in: context, baseInterpolation: isScaled ? .high : .none, includesTextDraft: false)
             return
         }
         context.saveGState()
@@ -110,6 +114,10 @@ final class CanvasView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        if document.textDraft != nil {
+            apply(.finishText)
+            return
+        }
         window?.makeFirstResponder(self)
         guard !isPickingColor else {
             sampleColor(at: point(of: event), selecting: true)
@@ -117,7 +125,12 @@ final class CanvasView: NSView {
         }
         apply(.angleConstrained(event.modifierFlags.contains(.shift)))
         apply(.arrowReversed(event.modifierFlags.contains(.command)))
-        apply(.pointerDown(point(of: event)))
+        let location = point(of: event)
+        if event.clickCount == 2 && document.tool == .select {
+            apply(.editText(location))
+        } else if document.tool != .text || CGRect(origin: .zero, size: document.pointSize).contains(location) {
+            apply(.pointerDown(location))
+        }
     }
 
     override func flagsChanged(with event: NSEvent) {
@@ -184,12 +197,43 @@ final class CanvasView: NSView {
             bounds = CGRect(origin: .zero, size: document.stageSize)
             onStageChange?(before)
         }
+        syncTextEditor()
         needsDisplay = true
         window?.invalidateCursorRects(for: self)
         onChange?()
     }
 
+    private func syncTextEditor() {
+        guard let draft = document.textDraft else {
+            guard let editor = textEditor else { return }
+            textEditor = nil
+            editor.delegate = nil
+            editor.removeFromSuperview()
+            window?.makeFirstResponder(self)
+            return
+        }
+        if let editor = textEditor {
+            editor.update(draft, stageOrigin: document.stageOrigin)
+            return
+        }
+        let editor = AnnotationTextView()
+        textEditor = editor
+        editor.delegate = self
+        editor.onFinish = { [weak self] in self?.apply(.finishText) }
+        editor.onCancel = { [weak self] in self?.apply(.cancelText) }
+        editor.update(draft, stageOrigin: document.stageOrigin)
+        addSubview(editor)
+        window?.makeFirstResponder(editor)
+        editor.setSelectedRange(NSRange(location: (editor.string as NSString).length, length: 0))
+    }
+
+    func textDidChange(_ notification: Notification) {
+        guard let editor = textEditor, notification.object as? NSTextView === editor else { return }
+        apply(.textChanged(editor.string))
+    }
+
     func handle(_ event: NSEvent) -> Bool {
+        guard textEditor == nil else { return false }
         guard let key = EditorKeymap.key(forKeyCode: event.keyCode, modifiers: event.modifierFlags) else {
             return false
         }
@@ -203,6 +247,7 @@ final class CanvasView: NSView {
             return true
         }
         switch key {
+        case .selectText: apply(.toolSelected(.text))
         case .selectLine: apply(.toolSelected(.line))
         case .select: apply(.toolSelected(.select))
         case .deleteSelection: apply(.deleteSelection)

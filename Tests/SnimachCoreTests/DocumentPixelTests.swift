@@ -36,6 +36,24 @@ final class DocumentPixelTests: XCTestCase {
         assertNear(bitmap(try document.render(), scale: 2).pixel(at: CGPoint(x: 25, y: 30)), CGColor(srgbRed: 0.15, green: 0.4, blue: 0.95, alpha: 1))
     }
 
+    func testEditingTextRendersReplacementAndCanHideNativeDraft() throws {
+        var document = makeDocument(pointSize: CGSize(width: 200, height: 150))
+        document.apply(.toolSelected(.text))
+        document.apply(.pointerDown(CGPoint(x: 20, y: 120)))
+        document.apply(.textChanged("Hello\nworld"))
+        document.apply(.finishText)
+        XCTAssertGreaterThan(bitmap(try document.render(), scale: 2).count(of: Style.standard.strokeColor), 20)
+        document.apply(.pointerDown(CGPoint(x: 25, y: 110)))
+        document.apply(.textChanged("Edited"))
+        document.apply(.colorSelected(.blue))
+        let preview = bitmap(try document.render(), scale: 2)
+        XCTAssertEqual(preview.count(of: Style.standard.strokeColor), 0)
+        XCTAssertGreaterThan(preview.count(of: AnnotationColor.blue.cgColor), 20)
+        XCTAssertEqual(bitmap(try document.render(includesTextDraft: false), scale: 2).count(of: AnnotationColor.blue.cgColor), 0)
+        document.apply(.finishText)
+        XCTAssertGreaterThan(bitmap(try document.render(), scale: 2).count(of: AnnotationColor.blue.cgColor), 20)
+    }
+
     private let baseColor = CGColor(srgbRed: 0.5, green: 0.5, blue: 0.5, alpha: 1)
 
     private func makeDocument(pointSize: CGSize = CGSize(width: 60, height: 40), scale: CGFloat = 2) -> Document {

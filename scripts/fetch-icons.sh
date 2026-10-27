@@ -13,6 +13,7 @@ trap 'rm -rf "$TMP"' EXIT
 ICONS=(
   cursor-linear
   minus-linear
+  text-linear
   arrow-right-up-linear
   hashtag-linear
   undo-left-linear

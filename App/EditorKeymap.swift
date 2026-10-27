@@ -4,6 +4,7 @@ enum EditorKey: Equatable {
     case select
     case deleteSelection
     case nudge(CGSize)
+    case selectText
     case selectLine
     case selectArrow
     case selectNumber
@@ -24,6 +25,7 @@ enum EditorKeymap {
     static func key(forKeyCode keyCode: UInt16, modifiers: NSEvent.ModifierFlags) -> EditorKey? {
         let flags = modifiers.intersection([.command, .shift, .option, .control])
         switch (keyCode, flags) {
+        case (17, []):              return .selectText
         case (37, []):              return .selectLine
         case (9, []):               return .select
         case (51, []), (117, []):   return .deleteSelection

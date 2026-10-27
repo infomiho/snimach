@@ -16,6 +16,9 @@ final class EditorVisualTests: XCTestCase {
             ("06-dark-short", .darkAqua, CGSize(width: 700, height: 280), false, false, false),
             ("07-light-default", .aqua, CGSize(width: 936, height: 596), false, false, false),
             ("08-light-picker", .aqua, CGSize(width: 560, height: 400), true, false, true),
+            ("10-dark-text-draft", .darkAqua, CGSize(width: 936, height: 596), true, false, false),
+            ("11-dark-text-committed", .darkAqua, CGSize(width: 936, height: 596), true, false, false),
+            ("12-light-text-compact", .aqua, CGSize(width: 360, height: 300), false, false, false),
             ("09-dark-presets-off", .darkAqua, CGSize(width: 936, height: 596), false, true, false),
         ]
         for (name, appearance, size, backdrop, presets, picker) in scenarios {
@@ -42,6 +45,15 @@ final class EditorVisualTests: XCTestCase {
                 XCTAssertTrue(controller.backdropPopover.isShown)
                 // Let any in-flight show animation finish so the snapshot is representative.
                 try await Task.sleep(for: .milliseconds(300))
+            }
+            if name.contains("text") {
+                controller.canvas.apply(.toolSelected(.text))
+                controller.canvas.apply(.pointerDown(CGPoint(x: 460, y: 220)))
+                let editor = try XCTUnwrap(controller.panel.firstResponder as? NSTextView)
+                editor.insertText("Release notes\nReady to share", replacementRange: NSRange(location: NSNotFound, length: 0))
+                if name.contains("committed") { controller.canvas.apply(.finishText) }
+                controller.panel.contentView?.layoutSubtreeIfNeeded()
+                try await Task.sleep(for: .milliseconds(200))
             }
             let windows = [controller.panel] + (presets ? [try XCTUnwrap(controller.backdropPicker.window)] : [])
             let snapshot = try await EditorSnapshot.capture(windows)

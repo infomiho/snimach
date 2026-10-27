@@ -20,7 +20,8 @@
 
 - Capture an area, the frontmost window, or the whole screen with configurable shortcuts
 - Every shot lands on the clipboard right away, with a preview card you can ignore
-- Arrows, numbered badges, rectangles and pixelated redaction
+- Arrows, lines, text, numbered badges, rectangles and pixelated redaction
+- Move, delete and recolor annotations, with undo and redo
 - Backdrops with gradient presets for shots you want to share
 - A color inspector that copies the hex under the pointer
 - Save to a folder of your choice, or drag the shot straight out of the preview
