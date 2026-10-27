@@ -115,11 +115,13 @@ final class CanvasView: NSView {
             sampleColor(at: point(of: event), selecting: true)
             return
         }
+        apply(.angleConstrained(event.modifierFlags.contains(.shift)))
         apply(.arrowReversed(event.modifierFlags.contains(.command)))
         apply(.pointerDown(point(of: event)))
     }
 
     override func flagsChanged(with event: NSEvent) {
+        apply(.angleConstrained(event.modifierFlags.contains(.shift)))
         apply(.arrowReversed(event.modifierFlags.contains(.command)))
     }
 
@@ -201,6 +203,7 @@ final class CanvasView: NSView {
             return true
         }
         switch key {
+        case .selectLine: apply(.toolSelected(.line))
         case .select: apply(.toolSelected(.select))
         case .deleteSelection: apply(.deleteSelection)
         case .nudge(let offset): apply(.nudgeSelection(offset))

@@ -166,6 +166,7 @@ struct ToolChoice {
 
     static let all: [ToolChoice] = [
         ToolChoice(tool: .select, icon: "cursor-linear", label: "Select", key: "V"),
+        ToolChoice(tool: .line, icon: "minus-linear", label: "Line", key: "L"),
         ToolChoice(tool: .arrow, icon: "arrow-right-up-linear", label: "Arrow", key: "A"),
         ToolChoice(tool: .number, icon: "hashtag-linear", label: "Number", key: "N"),
         ToolChoice(tool: .rectangle, icon: "stop-linear", label: "Rectangle", key: "R"),
@@ -174,6 +175,9 @@ struct ToolChoice {
 }
 
 final class EditorAccessoryBar: EditorSurface {
+    let colorButton = EditorButton(label: "Annotation color")
+    let colorMenu = NSMenu()
+    var onColor: ((AnnotationColor) -> Void)?
     let undoButton = EditorButton(icon: "undo-left-linear", label: "Undo", shortcut: "⌘Z")
     let redoButton = EditorButton(icon: "undo-right-linear", label: "Redo", shortcut: "⇧⌘Z")
     let backdropButton = EditorButton(label: "Backdrop", shortcut: "K")
@@ -197,7 +201,7 @@ final class EditorAccessoryBar: EditorSurface {
             button.onPress = { [weak self] in self?.onTool?(choice.tool) }
             return button
         }
-        for view in toolButtons + [moreButton, undoButton, redoButton, backdropButton, presetsButton, pickerButton] {
+        for view in toolButtons + [moreButton, colorButton, undoButton, redoButton, backdropButton, presetsButton, pickerButton] {
             addSubview(view)
         }
         for separator in separators {
@@ -207,6 +211,17 @@ final class EditorAccessoryBar: EditorSurface {
         backdropButton.imagePosition = .imageLeading
         backdropButton.segment = .leading
         presetsButton.segment = .trailing
+        colorButton.onPress = { [weak self] in
+            guard let self else { return }
+            colorMenu.popUp(positioning: nil, at: CGPoint(x: 0, y: colorButton.bounds.maxY + 6), in: colorButton)
+        }
+        for (index, color) in AnnotationColor.allCases.enumerated() {
+            let item = NSMenuItem(title: color.name, action: #selector(selectColor(_:)), keyEquivalent: "")
+            item.target = self
+            item.tag = index
+            item.image = Self.colorSwatch(color)
+            colorMenu.addItem(item)
+        }
         moreButton.onPress = { [weak self] in self?.showMoreTools() }
     }
 
@@ -214,6 +229,12 @@ final class EditorAccessoryBar: EditorSurface {
 
     func update(document: Document, picking: Bool) {
         selectedTool = document.tool
+        colorButton.isEnabled = document.activeColor != nil && !picking
+        colorButton.image = Self.colorSwatch(document.activeColor ?? document.drawingColor)
+        colorButton.setAccessibilityValue(document.activeColor?.name ?? "Unavailable")
+        for (index, item) in colorMenu.items.enumerated() {
+            item.state = AnnotationColor.allCases[index] == document.activeColor ? .on : .off
+        }
         self.picking = picking
         undoButton.isEnabled = document.canUndo
         redoButton.isEnabled = document.canRedo
@@ -233,8 +254,7 @@ final class EditorAccessoryBar: EditorSurface {
         let room = width - EditorStyle.inset * 2
         let showLabel = Self.requiredWidth(toolCount: ToolChoice.all.count, showsLabel: true) <= room
         let compact = Self.requiredWidth(toolCount: ToolChoice.all.count, showsLabel: false) > room
-        visibleTools = compact ? [.arrow, .number] : ToolChoice.all.map(\.tool)
-        if compact && !visibleTools.contains(selectedTool) { visibleTools[1] = selectedTool }
+        visibleTools = compact ? [selectedTool] : ToolChoice.all.map(\.tool)
         var x = EditorStyle.controlPadding
         for (index, choice) in ToolChoice.all.enumerated() {
             let button = toolButtons[index]
@@ -247,6 +267,7 @@ final class EditorAccessoryBar: EditorSurface {
         }
         moreButton.isHidden = !compact
         if compact { place(moreButton, at: &x) }
+        place(colorButton, at: &x)
         placeSeparator(separators[0], at: &x)
         place(undoButton, at: &x)
         place(redoButton, at: &x)
@@ -263,8 +284,8 @@ final class EditorAccessoryBar: EditorSurface {
     }
 
     private static func requiredWidth(toolCount: Int, showsLabel: Bool) -> CGFloat {
-        let buttonCount = CGFloat(toolCount + 5)
-        let buttons = CGFloat(toolCount + 3) * EditorStyle.controlSize.width
+        let buttonCount = CGFloat(toolCount + 6)
+        let buttons = CGFloat(toolCount + 4) * EditorStyle.controlSize.width
             + (showsLabel ? EditorButton.backdropWidth : 30) + 24
         let separators = 2 * (EditorStyle.groupPadding * 2 + 1)
         let gaps = (buttonCount - 4) * EditorStyle.controlGap
@@ -280,6 +301,22 @@ final class EditorAccessoryBar: EditorSurface {
         x += EditorStyle.groupPadding - EditorStyle.controlGap
         view.frame = CGRect(x: x, y: (EditorStyle.barHeight - 20) / 2, width: 1, height: 20)
         x += 1 + EditorStyle.groupPadding
+    }
+
+    private static func colorSwatch(_ color: AnnotationColor) -> NSImage {
+        NSImage(size: CGSize(width: 18, height: 18), flipped: false) { rect in
+            let circle = NSBezierPath(ovalIn: rect.insetBy(dx: 1, dy: 1))
+            NSColor(cgColor: color.cgColor)?.setFill()
+            circle.fill()
+            NSColor.separatorColor.setStroke()
+            circle.lineWidth = 1
+            circle.stroke()
+            return true
+        }
+    }
+
+    @objc private func selectColor(_ sender: NSMenuItem) {
+        onColor?(AnnotationColor.allCases[sender.tag])
     }
 
     private func showMoreTools() {

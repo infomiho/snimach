@@ -92,6 +92,7 @@ final class EditorWindowController: NSObject, EditorController {
             self?.canvas.apply(.toolSelected(tool))
             self?.focusCanvas()
         }
+        accessoryBar.onColor = { [weak self] color in self?.canvas.apply(.colorSelected(color)) }
         accessoryBar.undoButton.onPress = { [weak self] in self?.canvas.apply(.undo) }
         accessoryBar.redoButton.onPress = { [weak self] in self?.canvas.apply(.redo) }
         accessoryBar.backdropButton.onPress = { [weak self] in self?.toggleBackdrop() }

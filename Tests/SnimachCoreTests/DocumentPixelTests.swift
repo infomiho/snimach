@@ -3,6 +3,39 @@ import XCTest
 @testable import SnimachCore
 
 final class DocumentPixelTests: XCTestCase {
+    func testConstrainedLineExportsShaftWithoutArrowhead() throws {
+        var document = makeDocument()
+        document.apply(.toolSelected(.line))
+        document.apply(.angleConstrained(true))
+        document.apply(.pointerDown(CGPoint(x: 10, y: 20)))
+        document.apply(.pointerUp(CGPoint(x: 50, y: 23)))
+        guard case .line(let from, let to, _) = document.annotations.first else {
+            return XCTFail("Expected a line")
+        }
+        XCTAssertEqual(from, CGPoint(x: 10, y: 20))
+        XCTAssertEqual(to.y, 20, accuracy: 0.001)
+        let rendered = bitmap(try document.render(), scale: 2)
+        assertNear(rendered.pixel(at: CGPoint(x: 25, y: 20)), Style.standard.strokeColor)
+        assertNear(rendered.pixel(at: CGPoint(x: 34, y: 26)), baseColor)
+    }
+
+    func testColorChangesSelectedLineOnlyAndUndoRestoresPixels() throws {
+        var document = makeDocument()
+        document.apply(.toolSelected(.line))
+        document.apply(.pointerDown(CGPoint(x: 10, y: 10)))
+        document.apply(.pointerUp(CGPoint(x: 50, y: 10)))
+        document.apply(.pointerDown(CGPoint(x: 10, y: 30)))
+        document.apply(.pointerUp(CGPoint(x: 50, y: 30)))
+        document.apply(.colorSelected(.blue))
+        let rendered = bitmap(try document.render(), scale: 2)
+        assertNear(rendered.pixel(at: CGPoint(x: 25, y: 10)), Style.standard.strokeColor)
+        assertNear(rendered.pixel(at: CGPoint(x: 25, y: 30)), CGColor(srgbRed: 0.15, green: 0.4, blue: 0.95, alpha: 1))
+        document.apply(.undo)
+        assertNear(bitmap(try document.render(), scale: 2).pixel(at: CGPoint(x: 25, y: 30)), Style.standard.strokeColor)
+        document.apply(.redo)
+        assertNear(bitmap(try document.render(), scale: 2).pixel(at: CGPoint(x: 25, y: 30)), CGColor(srgbRed: 0.15, green: 0.4, blue: 0.95, alpha: 1))
+    }
+
     private let baseColor = CGColor(srgbRed: 0.5, green: 0.5, blue: 0.5, alpha: 1)
 
     private func makeDocument(pointSize: CGSize = CGSize(width: 60, height: 40), scale: CGFloat = 2) -> Document {

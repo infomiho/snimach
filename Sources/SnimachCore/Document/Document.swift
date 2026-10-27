@@ -14,11 +14,13 @@ public struct Document {
     public private(set) var backdrop: BackdropMode
     public private(set) var backdropPreset: BackdropPreset
 
+    public private(set) var drawingColor: AnnotationColor = .orange
     public private(set) var selectedIndex: Int?
 
     private var movementStart: [Annotation]?
     private var dragOrigin: CGPoint?
     private var dragTip: CGPoint?
+    private var isAngleConstrained = false
     private var isArrowReversed = false
     private var undoStack: [[Annotation]] = []
     private var redoStack: [[Annotation]] = []
@@ -50,6 +52,11 @@ public struct Document {
         backdrop == .transparent
             ? .zero
             : CGPoint(x: Style.backdrop.padding, y: Style.backdrop.padding)
+    }
+
+    public var activeColor: AnnotationColor? {
+        if let index = selectedIndex { return annotations[index].color }
+        return tool == .redact ? nil : drawingColor
     }
 
     public var selectionBounds: CGRect? {
@@ -96,11 +103,11 @@ public struct Document {
                 }
                 movementStart = nil
                 cancelDrag()
-            case .arrow:
+            case .arrow, .line:
                 guard let origin = dragOrigin else { return }
                 cancelDrag()
                 if hypot(point.x - origin.x, point.y - origin.y) >= Style.standard.minimumArrowLength {
-                    commit(arrow(from: origin, to: point))
+                    commit(preview(from: origin, to: point))
                 }
             case .number:
                 commit(.number(badgeCount + 1, center: point))
@@ -115,6 +122,9 @@ public struct Document {
                 }
             }
 
+        case .angleConstrained(let constrained):
+            isAngleConstrained = constrained
+
         case .arrowReversed(let reversed):
             isArrowReversed = reversed
 
@@ -123,6 +133,18 @@ public struct Document {
 
         case .backdropPresetSelected(let preset):
             backdropPreset = preset
+
+        case .colorSelected(let color):
+            cancelDrag()
+            guard let index = selectedIndex else {
+                drawingColor = color
+                return
+            }
+            let updated = annotations[index].colored(color)
+            guard updated != annotations[index] else { return }
+            undoStack.append(annotations)
+            annotations[index] = updated
+            redoStack.removeAll()
 
         case .deselect:
             cancelDrag()
@@ -142,9 +164,9 @@ public struct Document {
             annotations.remove(at: index)
             var number = 0
             annotations = annotations.map { annotation in
-                guard case .number(_, let center) = annotation else { return annotation }
+                guard case .number(_, let center, let color) = annotation else { return annotation }
                 number += 1
-                return .number(number, center: center)
+                return .number(number, center: center, color: color)
             }
             redoStack.removeAll()
             selectedIndex = nil
@@ -166,11 +188,22 @@ public struct Document {
     }
 
     private func preview(from origin: CGPoint, to tip: CGPoint) -> Annotation {
+        let tip = constrainedTip(from: origin, to: tip)
         switch tool {
+        case .line: return .line(from: origin, to: tip)
         case .redact: return .redaction(Geometry.rect(from: origin, to: tip))
         case .rectangle: return .rectangle(Geometry.rect(from: origin, to: tip))
         case .select, .arrow, .number: return arrow(from: origin, to: tip)
         }
+    }
+
+    private func constrainedTip(from origin: CGPoint, to tip: CGPoint) -> CGPoint {
+        guard isAngleConstrained && (tool == .line || tool == .arrow) else { return tip }
+        let dx = tip.x - origin.x
+        let dy = tip.y - origin.y
+        let angle = (atan2(dy, dx) / (.pi / 4)).rounded() * (.pi / 4)
+        let length = hypot(dx, dy)
+        return CGPoint(x: origin.x + cos(angle) * length, y: origin.y + sin(angle) * length)
     }
 
     private func arrow(from origin: CGPoint, to tip: CGPoint) -> Annotation {
@@ -183,7 +216,8 @@ public struct Document {
 
     private mutating func commit(_ annotation: Annotation) {
         undoStack.append(annotations)
-        annotations.append(annotation)
+        annotations.append(annotation.colored(drawingColor))
+        selectedIndex = annotations.count - 1
         redoStack.removeAll()
     }
 
@@ -216,7 +250,7 @@ public struct Document {
             draw(annotation, in: context)
         }
         if tool != .select, let origin = dragOrigin, let tip = dragTip {
-            draw(preview(from: origin, to: tip), in: context)
+            draw(preview(from: origin, to: tip).colored(drawingColor), in: context)
         }
     }
 
@@ -342,18 +376,27 @@ public struct Document {
 
     private func draw(_ annotation: Annotation, in context: CGContext) {
         switch annotation {
-        case .arrow(let from, let to):
-            drawArrow(from: from, to: to, in: context)
-        case .number(let value, let center):
-            drawBadge(value, center: center, in: context)
+        case .line(let from, let to, let color):
+            context.saveGState()
+            context.setStrokeColor(color.cgColor)
+            context.setLineWidth(Style.standard.strokeWidth)
+            context.setLineCap(.round)
+            context.move(to: from)
+            context.addLine(to: to)
+            context.strokePath()
+            context.restoreGState()
+        case .arrow(let from, let to, let color):
+            drawArrow(from: from, to: to, color: color, in: context)
+        case .number(let value, let center, let color):
+            drawBadge(value, center: center, color: color, in: context)
         case .redaction(let rect):
             drawRedaction(rect, in: context)
-        case .rectangle(let rect):
-            drawRectangle(rect, in: context)
+        case .rectangle(let rect, let color):
+            drawRectangle(rect, color: color, in: context)
         }
     }
 
-    private func drawArrow(from: CGPoint, to: CGPoint, in context: CGContext) {
+    private func drawArrow(from: CGPoint, to: CGPoint, color: AnnotationColor, in context: CGContext) {
         let style = Style.standard
         guard let shape = Geometry.arrowShape(
             from: from,
@@ -364,8 +407,8 @@ public struct Document {
 
         context.saveGState()
         defer { context.restoreGState() }
-        context.setStrokeColor(style.strokeColor)
-        context.setFillColor(style.strokeColor)
+        context.setStrokeColor(color.cgColor)
+        context.setFillColor(color.cgColor)
         context.setLineWidth(style.strokeWidth)
         context.setLineCap(.round)
         context.setLineJoin(.round)
@@ -379,11 +422,11 @@ public struct Document {
         context.fillPath()
     }
 
-    private func drawRectangle(_ rect: CGRect, in context: CGContext) {
+    private func drawRectangle(_ rect: CGRect, color: AnnotationColor, in context: CGContext) {
         let style = Style.standard
         context.saveGState()
         defer { context.restoreGState() }
-        context.setStrokeColor(style.strokeColor)
+        context.setStrokeColor(color.cgColor)
         context.setLineWidth(style.strokeWidth)
         context.setLineJoin(.miter)
         context.stroke(rect)
@@ -432,12 +475,12 @@ public struct Document {
         return context.makeImage()
     }
 
-    private func drawBadge(_ value: Int, center: CGPoint, in context: CGContext) {
+    private func drawBadge(_ value: Int, center: CGPoint, color: AnnotationColor, in context: CGContext) {
         let style = Style.standard
         let radius = style.badgeRadius
 
         context.saveGState()
-        context.setFillColor(style.badgeColor)
+        context.setFillColor(color.cgColor)
         context.fillEllipse(in: CGRect(
             x: center.x - radius,
             y: center.y - radius,
@@ -449,7 +492,7 @@ public struct Document {
         let label = "\(value)" as CFString
         let attributes: [CFString: Any] = [
             kCTFontAttributeName: style.font,
-            kCTForegroundColorAttributeName: style.labelColor,
+            kCTForegroundColorAttributeName: color.labelColor,
         ]
         guard let attributed = CFAttributedStringCreate(nil, label, attributes as CFDictionary) else {
             return

@@ -2,6 +2,7 @@ import CoreGraphics
 
 public enum Tool: Equatable {
     case select
+    case line
     case arrow
     case number
     case redact
@@ -20,9 +21,11 @@ public enum Action: Equatable {
     case pointerUp(CGPoint)
     /// Cmd held while drawing: the arrow points back at where the drag started.
     case arrowReversed(Bool)
+    case angleConstrained(Bool)
     /// Backdrop mode or preset picked in the editor. Chrome, never undoable.
     case backdropSelected(BackdropMode)
     case backdropPresetSelected(BackdropPreset)
+    case colorSelected(AnnotationColor)
     case deselect
     case nudgeSelection(CGSize)
     case deleteSelection
