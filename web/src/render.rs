@@ -56,7 +56,7 @@ pub fn home(releases: &[Release], fingerprint: &Fingerprint) -> String {
                 article {
                     (viz::annotate())
                     h2 { "Annotate in seconds" }
-                    p { "Arrows, numbered badges, rectangles and pixelated redaction, with undo and redo. Enter copies and closes." }
+                    p { "Arrows, lines, text, numbered badges, rectangles and pixelated redaction. Move annotations and change their colors, with undo and redo. Enter copies and closes." }
                 }
                 article {
                     (viz::backdrop())
