@@ -1,6 +1,7 @@
 import CoreGraphics
 
 public enum Tool: Equatable {
+    case select
     case arrow
     case number
     case redact
@@ -22,6 +23,9 @@ public enum Action: Equatable {
     /// Backdrop mode or preset picked in the editor. Chrome, never undoable.
     case backdropSelected(BackdropMode)
     case backdropPresetSelected(BackdropPreset)
+    case deselect
+    case nudgeSelection(CGSize)
+    case deleteSelection
     case undo
     case redo
 }

@@ -5,6 +5,29 @@ import XCTest
 
 @MainActor
 final class EditorToolbarTests: XCTestCase {
+    func testSelectShortcutMovesDeletesAndEscapesBeforeDiscarding() throws {
+        let controller = makeEditor()
+        var discarded = false
+        controller.onFinish = { if case .discard = $0 { discarded = true } }
+        controller.canvas.apply(.toolSelected(.number))
+        controller.canvas.apply(.pointerUp(CGPoint(x: 20, y: 20)))
+        try press(9, in: controller)
+        XCTAssertEqual(controller.document.tool, .select)
+        controller.canvas.apply(.pointerDown(CGPoint(x: 20, y: 20)))
+        controller.canvas.apply(.pointerUp(CGPoint(x: 20, y: 20)))
+        try press(124, in: controller)
+        XCTAssertEqual(controller.document.annotations, [.number(1, center: CGPoint(x: 21, y: 20))])
+        try press(53, in: controller)
+        XCTAssertNil(controller.document.selectedIndex)
+        XCTAssertFalse(discarded)
+        controller.canvas.apply(.pointerDown(CGPoint(x: 21, y: 20)))
+        controller.canvas.apply(.pointerUp(CGPoint(x: 21, y: 20)))
+        try press(51, in: controller)
+        XCTAssertTrue(controller.document.annotations.isEmpty)
+        controller.accessoryBar.undoButton.performClick(nil)
+        XCTAssertEqual(controller.document.annotations.count, 1)
+    }
+
     func testSolarIconsAreBundledAndLoad() {
         let icons = ToolChoice.all.map(\.icon) + [
             "undo-left-linear", "undo-right-linear", "diskette-linear", "copy-linear",
@@ -60,10 +83,10 @@ final class EditorToolbarTests: XCTestCase {
         XCTAssertTrue(controller.accessoryBar.superview === stage)
         XCTAssertTrue(controller.canvas.superview === stage)
         controller.accessoryBar.arrange(in: 900)
-        XCTAssertEqual(controller.accessoryBar.visibleTools, [.arrow, .number, .rectangle, .redact])
-        controller.accessoryBar.toolButtons[2].performClick(nil)
+        XCTAssertEqual(controller.accessoryBar.visibleTools, [.select, .arrow, .number, .rectangle, .redact])
+        controller.accessoryBar.toolButtons[3].performClick(nil)
         XCTAssertEqual(controller.document.tool, .rectangle)
-        XCTAssertEqual(controller.accessoryBar.toolButtons[2].state, .on)
+        XCTAssertEqual(controller.accessoryBar.toolButtons[3].state, .on)
         XCTAssertEqual(controller.accessoryBar.toolButtons[0].state, .off)
     }
 
@@ -95,8 +118,8 @@ final class EditorToolbarTests: XCTestCase {
                 XCTAssertEqual(size.height - button.frame.maxY, 8)
             }
         }
-        bar.arrange(in: 440)
-        XCTAssertEqual(bar.visibleTools.count, 4, "Keep tools visible when they fit without the backdrop label")
+        bar.arrange(in: 520)
+        XCTAssertEqual(bar.visibleTools.count, 5, "Keep tools visible when they fit without the backdrop label")
     }
 
     func testColorChipHasEqualOuterPaddingAndNoOverlappingControls() {

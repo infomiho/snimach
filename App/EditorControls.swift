@@ -165,6 +165,7 @@ struct ToolChoice {
     let key: String
 
     static let all: [ToolChoice] = [
+        ToolChoice(tool: .select, icon: "cursor-linear", label: "Select", key: "V"),
         ToolChoice(tool: .arrow, icon: "arrow-right-up-linear", label: "Arrow", key: "A"),
         ToolChoice(tool: .number, icon: "hashtag-linear", label: "Number", key: "N"),
         ToolChoice(tool: .rectangle, icon: "stop-linear", label: "Rectangle", key: "R"),
@@ -230,8 +231,8 @@ final class EditorAccessoryBar: EditorSurface {
     func arrange(in width: CGFloat) -> CGSize {
         availableWidth = width
         let room = width - EditorStyle.inset * 2
-        let showLabel = Self.requiredWidth(toolCount: 4, showsLabel: true) <= room
-        let compact = Self.requiredWidth(toolCount: 4, showsLabel: false) > room
+        let showLabel = Self.requiredWidth(toolCount: ToolChoice.all.count, showsLabel: true) <= room
+        let compact = Self.requiredWidth(toolCount: ToolChoice.all.count, showsLabel: false) > room
         visibleTools = compact ? [.arrow, .number] : ToolChoice.all.map(\.tool)
         if compact && !visibleTools.contains(selectedTool) { visibleTools[1] = selectedTool }
         var x = EditorStyle.controlPadding

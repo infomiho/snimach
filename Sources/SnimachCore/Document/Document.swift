@@ -14,6 +14,9 @@ public struct Document {
     public private(set) var backdrop: BackdropMode
     public private(set) var backdropPreset: BackdropPreset
 
+    public private(set) var selectedIndex: Int?
+
+    private var movementStart: [Annotation]?
     private var dragOrigin: CGPoint?
     private var dragTip: CGPoint?
     private var isArrowReversed = false
@@ -49,6 +52,10 @@ public struct Document {
             : CGPoint(x: Style.backdrop.padding, y: Style.backdrop.padding)
     }
 
+    public var selectionBounds: CGRect? {
+        selectedIndex.map { annotations[$0].bounds }
+    }
+
     public var canUndo: Bool { !undoStack.isEmpty }
     public var canRedo: Bool { !redoStack.isEmpty }
 
@@ -58,8 +65,18 @@ public struct Document {
         case .toolSelected(let newTool):
             cancelDrag()
             tool = newTool
+            selectedIndex = nil
 
         case .pointerDown(let point):
+            if tool == .select {
+                cancelDrag()
+                selectedIndex = annotations.indices.reversed().first { annotations[$0].contains(point) }
+                if selectedIndex != nil {
+                    movementStart = annotations
+                    dragOrigin = point
+                }
+                return
+            }
             guard tool.isDrag else { return }
             dragOrigin = point
             dragTip = point
@@ -67,9 +84,18 @@ public struct Document {
         case .pointerDragged(let point):
             guard dragOrigin != nil else { return }
             dragTip = point
+            if tool == .select { moveSelection(to: point) }
 
         case .pointerUp(let point):
             switch tool {
+            case .select:
+                moveSelection(to: point)
+                if let previous = movementStart, previous != annotations {
+                    undoStack.append(previous)
+                    redoStack.removeAll()
+                }
+                movementStart = nil
+                cancelDrag()
             case .arrow:
                 guard let origin = dragOrigin else { return }
                 cancelDrag()
@@ -98,17 +124,44 @@ public struct Document {
         case .backdropPresetSelected(let preset):
             backdropPreset = preset
 
+        case .deselect:
+            cancelDrag()
+            selectedIndex = nil
+
+        case .nudgeSelection(let offset):
+            cancelDrag()
+            guard let index = selectedIndex, offset != .zero else { return }
+            undoStack.append(annotations)
+            annotations[index] = annotations[index].translated(by: offset)
+            redoStack.removeAll()
+
+        case .deleteSelection:
+            cancelDrag()
+            guard let index = selectedIndex else { return }
+            undoStack.append(annotations)
+            annotations.remove(at: index)
+            var number = 0
+            annotations = annotations.map { annotation in
+                guard case .number(_, let center) = annotation else { return annotation }
+                number += 1
+                return .number(number, center: center)
+            }
+            redoStack.removeAll()
+            selectedIndex = nil
+
         case .undo:
             cancelDrag()
             guard let previous = undoStack.popLast() else { return }
             redoStack.append(annotations)
             annotations = previous
+            selectedIndex = nil
 
         case .redo:
             cancelDrag()
             guard let next = redoStack.popLast() else { return }
             undoStack.append(annotations)
             annotations = next
+            selectedIndex = nil
         }
     }
 
@@ -116,7 +169,7 @@ public struct Document {
         switch tool {
         case .redact: return .redaction(Geometry.rect(from: origin, to: tip))
         case .rectangle: return .rectangle(Geometry.rect(from: origin, to: tip))
-        case .arrow, .number: return arrow(from: origin, to: tip)
+        case .select, .arrow, .number: return arrow(from: origin, to: tip)
         }
     }
 
@@ -134,7 +187,14 @@ public struct Document {
         redoStack.removeAll()
     }
 
+    private mutating func moveSelection(to point: CGPoint) {
+        guard let index = selectedIndex, let previous = movementStart, let origin = dragOrigin else { return }
+        annotations[index] = previous[index].translated(by: CGSize(width: point.x - origin.x, height: point.y - origin.y))
+    }
+
     private mutating func cancelDrag() {
+        if let previous = movementStart { annotations = previous }
+        movementStart = nil
         dragOrigin = nil
         dragTip = nil
     }
@@ -155,7 +215,7 @@ public struct Document {
         for annotation in annotations {
             draw(annotation, in: context)
         }
-        if let origin = dragOrigin, let tip = dragTip {
+        if tool != .select, let origin = dragOrigin, let tip = dragTip {
             draw(preview(from: origin, to: tip), in: context)
         }
     }

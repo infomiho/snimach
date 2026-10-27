@@ -48,7 +48,7 @@ final class CanvasView: NSView {
     }
 
     override func resetCursorRects() {
-        addCursorRect(bounds, cursor: .crosshair)
+        addCursorRect(bounds, cursor: document.tool == .select ? .arrow : .crosshair)
     }
 
     init(document: Document) {
@@ -74,6 +74,7 @@ final class CanvasView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
+        defer { drawSelection(in: context) }
         if document.backdrop == .transparent {
             document.draw(in: context, baseInterpolation: isScaled ? .high : .none)
             return
@@ -88,6 +89,18 @@ final class CanvasView: NSView {
         context.saveGState()
         context.interpolationQuality = isScaled ? .high : .none
         context.draw(stage, in: CGRect(origin: .zero, size: bounds.size))
+        context.restoreGState()
+    }
+
+    private func drawSelection(in context: CGContext) {
+        guard let rect = document.selectionBounds else { return }
+        let zoom = frame.width / bounds.width
+        context.saveGState()
+        context.translateBy(x: document.stageOrigin.x, y: document.stageOrigin.y)
+        context.setStrokeColor(EditorStyle.accent.cgColor)
+        context.setLineWidth(1 / zoom)
+        context.setLineDash(phase: 0, lengths: [4 / zoom, 3 / zoom])
+        context.stroke(rect.insetBy(dx: -3 / zoom, dy: -3 / zoom))
         context.restoreGState()
     }
 
@@ -170,6 +183,7 @@ final class CanvasView: NSView {
             onStageChange?(before)
         }
         needsDisplay = true
+        window?.invalidateCursorRects(for: self)
         onChange?()
     }
 
@@ -182,7 +196,14 @@ final class CanvasView: NSView {
             return true
         }
         if key == .copyHex && !isPickingColor { return false }
+        if key == .discard && document.selectedIndex != nil && !isPickingColor {
+            apply(.deselect)
+            return true
+        }
         switch key {
+        case .select: apply(.toolSelected(.select))
+        case .deleteSelection: apply(.deleteSelection)
+        case .nudge(let offset): apply(.nudgeSelection(offset))
         case .selectArrow:     apply(.toolSelected(.arrow))
         case .selectNumber:    apply(.toolSelected(.number))
         case .selectRectangle: apply(.toolSelected(.rectangle))

@@ -1,6 +1,9 @@
 import AppKit
 
 enum EditorKey: Equatable {
+    case select
+    case deleteSelection
+    case nudge(CGSize)
     case selectArrow
     case selectNumber
     case selectRectangle
@@ -20,6 +23,16 @@ enum EditorKeymap {
     static func key(forKeyCode keyCode: UInt16, modifiers: NSEvent.ModifierFlags) -> EditorKey? {
         let flags = modifiers.intersection([.command, .shift, .option, .control])
         switch (keyCode, flags) {
+        case (9, []):               return .select
+        case (51, []), (117, []):   return .deleteSelection
+        case (123...126, []) , (123...126, .shift):
+            let step: CGFloat = flags.contains(.shift) ? 10 : 1
+            switch keyCode {
+            case 123: return .nudge(CGSize(width: -step, height: 0))
+            case 124: return .nudge(CGSize(width: step, height: 0))
+            case 125: return .nudge(CGSize(width: 0, height: -step))
+            default: return .nudge(CGSize(width: 0, height: step))
+            }
         case (53, []):              return .discard
         case (36, []), (76, []):    return .commit
         case (8, .command):         return .commit
