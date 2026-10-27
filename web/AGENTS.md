@@ -84,9 +84,8 @@ Coolify: Base Directory `/web`, Dockerfile Location `/Dockerfile`, port 3000,
 health check `/healthz`. A `v*` tag runs the release workflow, which calls the
 Coolify webhook (`COOLIFY_WEBHOOK`, `COOLIFY_TOKEN`) to rebuild the site.
 
-Pushes to `main` run CI only. For web-only updates, push, wait for green CI,
-then run `coolify deploy uuid bdsmxq0ipfvhgbdf07p37uxu`. Verify deployment success
-and the live page.
+Pushes to `main` run CI only. For web-only updates, wait for green CI, deploy
+with the `coolify` CLI, and verify the live page.
 
 ## Validate
 
