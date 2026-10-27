@@ -49,7 +49,7 @@ Files, one type each:
   and backdrop padding. Color inspection samples source pixels and suppresses drawing.
 - `AnnotationTextView.swift`: native plain text editing, using the document font sizes and line heights.
   Return adds a newline, Command-Return finishes and Escape cancels. Clicking away from text
-  finishes the draft and returns to Select. Style controls keep the text draft active.
+  finishes the draft, closes the style shelf and returns to Select. Style controls keep the text draft active.
 - `EditorKeymap.swift`: pure mapping of physical keys and modifiers to editor actions.
 
 Package dependency: `sindresorhus/KeyboardShortcuts` 3.x. Carbon hotkeys, no permission prompt, sandbox-safe, fires while an NSMenu is open.

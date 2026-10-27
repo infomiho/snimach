@@ -14,12 +14,16 @@ final class EditorTextTests: XCTestCase {
         canvas.apply(.pointerDown(CGPoint(x: 30, y: 220)))
         let editor = try XCTUnwrap(canvas.textEditor)
         editor.insertText("Label", replacementRange: NSRange(location: NSNotFound, length: 0))
+        controller.accessoryBar.colorButton.performClick(nil)
+        XCTAssertFalse(controller.styleShelf.isHidden)
         let location = canvas.convert(CGPoint(x: 250, y: 140), to: nil)
         let click = try XCTUnwrap(NSEvent.mouseEvent(with: .leftMouseDown, location: location, modifierFlags: [],
             timestamp: 0, windowNumber: controller.panel.windowNumber, context: nil,
             eventNumber: 0, clickCount: 1, pressure: 1))
         controller.panel.sendEvent(click)
         XCTAssertNil(controller.document.textDraft)
+        XCTAssertTrue(controller.styleShelf.isHidden)
+        XCTAssertEqual(controller.accessoryBar.colorButton.state, .off)
         XCTAssertEqual(controller.document.tool, .select)
         XCTAssertEqual(controller.document.annotations.count, 1)
         XCTAssertNil(controller.document.selectionBounds)

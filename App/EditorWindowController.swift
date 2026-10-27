@@ -370,12 +370,14 @@ final class EditorPanel: NSPanel {
     var onDismissStyleShelf: (() -> Void)?
 
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .leftMouseDown, let canvas, canvas.textEditor != nil {
+        if event.type == .leftMouseDown, let canvas, let textEditor = canvas.textEditor {
             let location = canvas.convert(event.locationInWindow, from: nil)
             let styling = annotationStyleButton.map { button in
                 button.bounds.contains(button.convert(event.locationInWindow, from: nil))
             } ?? false
             let inShelf = annotationStyleShelf.map { !$0.isHidden && $0.bounds.contains($0.convert(event.locationInWindow, from: nil)) } ?? false
+            let inTextEditor = textEditor.bounds.contains(textEditor.convert(event.locationInWindow, from: nil))
+            if !inTextEditor && !styling && !inShelf { onDismissStyleShelf?() }
             if !canvas.bounds.contains(location) && !styling && !inShelf { canvas.apply(.toolSelected(.select)) }
         }
         if event.type == .keyDown, event.keyCode == 53, event.modifierFlags.intersection([.command, .shift, .control, .option]).isEmpty,
