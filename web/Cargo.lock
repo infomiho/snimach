@@ -203,18 +203,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "snimach-web"
-version = "0.1.0"
-dependencies = [
- "axum",
- "maud",
- "pulldown-cmark",
- "reqwest",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "displaydoc"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -795,9 +783,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.13.4"
+version = "0.13.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9f068eba8e7071c5f9511831b44f32c740d5adf574e990f946ddb53db2f314e"
+checksum = "3db2be46835f013dd3f4fa7f5f7402c537787b54ebb6fe2b94bbdd7e2669bb7b"
 dependencies = [
  "bitflags",
  "memchr",
@@ -1209,6 +1197,18 @@ name = "smallvec"
 version = "1.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba467056f1b547ed52077911161fc86985becbc60e8e1857c8a144dab0def891"
+
+[[package]]
+name = "snimach-web"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "maud",
+ "pulldown-cmark",
+ "reqwest",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "socket2"
