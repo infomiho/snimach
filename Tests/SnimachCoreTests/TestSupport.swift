@@ -303,11 +303,39 @@ final class ScriptedAreaSelector: AreaSelector {
         }
     }
 
+    /// What the overlay does to a suspended selection when a newer one starts.
+    func cancelOldest() {
+        guard !waiters.isEmpty else { return }
+        waiters.removeFirst().resume(throwing: CancellationError())
+    }
+
     func cancel() {
         cancelCount += 1
         let pending = waiters
         waiters.removeAll()
         for waiter in pending { waiter.resume(throwing: CancellationError()) }
+    }
+}
+
+/// Escape without a keyboard: `press()` is the user hitting the key while it is armed.
+@MainActor
+final class FakeCancelKey: CancelKey {
+    private var onPress: (() -> Void)?
+    private(set) var armCount = 0
+
+    var isArmed: Bool { onPress != nil }
+
+    func arm(onPress: @escaping () -> Void) {
+        armCount += 1
+        self.onPress = onPress
+    }
+
+    func disarm() {
+        onPress = nil
+    }
+
+    func press() {
+        onPress?()
     }
 }
 

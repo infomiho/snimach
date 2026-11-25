@@ -18,6 +18,7 @@ final class CaptureTests: XCTestCase {
 
     private func makeCapturer(backend: FakeCaptureBackend,
                               selector: ScriptedAreaSelector,
+                              cancelKey: CancelKey? = nil,
                               prompted: Bool = false,
                               pointer: CGPoint = .zero,
                               includesPointer: Bool = false,
@@ -25,6 +26,7 @@ final class CaptureTests: XCTestCase {
         Capturer(
             backend: backend,
             selector: selector,
+            cancelKey: cancelKey ?? FakeCancelKey(),
             hasPrompted: { prompted },
             markPrompted: onPrompt,
             pointerLocation: { pointer },
@@ -213,6 +215,49 @@ final class CaptureTests: XCTestCase {
         XCTAssertTrue(selector.isIdle, "no selection may be left suspended")
     }
 
+    func testEscapeCancelsASelectionThatNeverSeesTheKey() async throws {
+        let backend = FakeCaptureBackend()
+        backend.displaysList = [display2x]
+        let selector = ScriptedAreaSelector([.suspend])
+        let cancelKey = FakeCancelKey()
+        let capturer = makeCapturer(backend: backend, selector: selector, cancelKey: cancelKey)
+
+        let task = Task { try await capturer.capture(.area) }
+        await waitUntil { selector.callCount == 1 }
+        XCTAssertTrue(cancelKey.isArmed, "Escape must be armed while the selector is up")
+
+        cancelKey.press()
+        guard selector.isIdle else {
+            task.cancel()
+            return XCTFail("Escape must end the selection without the selector seeing a key")
+        }
+        let result = await task.result
+        guard case .failure(let error) = result else {
+            return XCTFail("expected cancellation, got success")
+        }
+        XCTAssertTrue(error is CancellationError)
+        XCTAssertFalse(cancelKey.isArmed, "Escape must go back to the other apps")
+    }
+
+    func testEscapeIsOnlyTakenWhileTheSelectorIsUp() async throws {
+        let backend = FakeCaptureBackend()
+        backend.displaysList = [display2x]
+        let gate = AsyncGate()
+        backend.beforeCaptureReturn = { await gate.wait() }
+        let selector = ScriptedAreaSelector([.rect(CGRect(x: 0, y: 0, width: 100, height: 100))])
+        let cancelKey = FakeCancelKey()
+        let capturer = makeCapturer(backend: backend, selector: selector, cancelKey: cancelKey)
+
+        let task = Task { try await capturer.capture(.area) }
+        await waitUntil { backend.captureCalls.count == 1 }
+        XCTAssertFalse(cancelKey.isArmed, "the freeze shows nothing to escape from")
+
+        gate.open()
+        _ = try await task.value
+        XCTAssertEqual(cancelKey.armCount, 1)
+        XCTAssertFalse(cancelKey.isArmed, "an accepted selection must release Escape")
+    }
+
     func testCancellationDuringFreezeNeverOpensTheSelector() async throws {
         let backend = FakeCaptureBackend()
         backend.displaysList = [display2x]
@@ -260,6 +305,32 @@ final class CaptureTests: XCTestCase {
         }
         XCTAssertTrue(error is CancellationError)
         XCTAssertTrue(selector.isIdle)
+    }
+
+    func testEscapeStillCancelsTheSecondCaptureAfterItReplacedTheFirst() async throws {
+        let backend = FakeCaptureBackend()
+        backend.displaysList = [display2x]
+        let selector = ScriptedAreaSelector([.suspend, .suspend])
+        let cancelKey = FakeCancelKey()
+        let capturer = makeCapturer(backend: backend, selector: selector, cancelKey: cancelKey)
+
+        let first = Task { try await capturer.capture(.area) }
+        await waitUntil { selector.callCount == 1 }
+        let second = Task { try await capturer.capture(.area) }
+        await waitUntil { selector.callCount == 2 }
+        selector.cancelOldest()
+        _ = await first.result
+
+        cancelKey.press()
+        guard selector.isIdle else {
+            second.cancel()
+            return XCTFail("the first capture ending must not take Escape from the second")
+        }
+        guard case .failure(let error) = await second.result else {
+            return XCTFail("expected cancellation, got success")
+        }
+        XCTAssertTrue(error is CancellationError)
+        XCTAssertFalse(cancelKey.isArmed)
     }
 
     func testFrontmostWindowContainingThePointWins() {

@@ -38,6 +38,9 @@ public final class Capturer {
 
     private let backend: CaptureBackend
     private let selector: AreaSelector
+    private let cancelKey: CancelKey
+    /// Tells a selection whether the armed `cancelKey` is still its own.
+    private var selectionGeneration = 0
     private let hasPrompted: () -> Bool
     private let markPrompted: () -> Void
     private let pointerLocation: () -> CGPoint
@@ -49,6 +52,7 @@ public final class Capturer {
         self.init(
             backend: ScreenCaptureKitBackend(),
             selector: OverlayAreaSelector(),
+            cancelKey: GlobalEscapeKey(),
             hasPrompted: { UserDefaults.standard.bool(forKey: Self.promptedKey) },
             markPrompted: { UserDefaults.standard.set(true, forKey: Self.promptedKey) },
             pointerLocation: { ScreenPointer.current() },
@@ -58,12 +62,14 @@ public final class Capturer {
 
     init(backend: CaptureBackend,
          selector: AreaSelector,
+         cancelKey: CancelKey,
          hasPrompted: @escaping () -> Bool,
          markPrompted: @escaping () -> Void,
          pointerLocation: @escaping () -> CGPoint,
          includesPointer: @escaping () -> Bool = { false }) {
         self.backend = backend
         self.selector = selector
+        self.cancelKey = cancelKey
         self.hasPrompted = hasPrompted
         self.markPrompted = markPrompted
         self.pointerLocation = pointerLocation
@@ -103,11 +109,7 @@ public final class Capturer {
 
         let windows = backend.onScreenWindowsFrontToBack()
         let pickable = Self.pickable(in: windows, ownPID: getpid())
-        let choice = try await withTaskCancellationHandler {
-            try await selector.select(over: frozen, windows: pickable.map(\.frame))
-        } onCancel: {
-            Task { @MainActor in self.selector.cancel() }
-        }
+        let choice = try await select(over: frozen, among: pickable)
         try Task.checkCancellation()
 
         let selection: CGRect
@@ -147,6 +149,24 @@ public final class Capturer {
             scale: display.scale,
             frame: CaptureGeometry.appKitFrame(frameCG, mainDisplayHeight: mainHeight)
         )
+    }
+
+    /// Escape cancels through `cancelKey` for as long as the selector is up, so the way out does
+    /// not depend on the selector holding the keyboard focus. A selection cancelled by a newer
+    /// one ends after the newer one armed the key, and must leave it armed.
+    private func select(over frozen: [FrozenDisplay],
+                        among pickable: [WindowInfo]) async throws -> AreaChoice {
+        selectionGeneration += 1
+        let ownSelection = selectionGeneration
+        cancelKey.arm { [selector] in selector.cancel() }
+        defer {
+            if ownSelection == selectionGeneration { cancelKey.disarm() }
+        }
+        return try await withTaskCancellationHandler {
+            try await selector.select(over: frozen, windows: pickable.map(\.frame))
+        } onCancel: {
+            Task { @MainActor in self.selector.cancel() }
+        }
     }
 
     /// `cropping(to:)` only references the source, so the shot would keep the whole frozen

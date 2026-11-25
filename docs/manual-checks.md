@@ -36,6 +36,9 @@ OS behaviors a test would only mock, run before shipping a build.
 7b. Guidelines follow the pointer before the drag. Shift during the drag squares the band,
     Space slides it, releasing Space resizes again from where it landed.
 8. Esc, a tiny drag, and switching apps mid-drag all leave no overlay behind.
+8a. Esc closes the overlay when Snimach does not have the focus: start an area capture, press
+    Cmd+Tab or open Spotlight before dragging, then press Esc. Afterwards Esc works in other
+    apps again.
 9. Window capture includes sheets and popovers and the system shadow.
 9c. `⌘⇧E` captures the whole display the pointer is on, with no overlay and no flash.
 9a. Holding Cmd while drawing an arrow flips it, live in the preview and in the commit.

@@ -55,7 +55,7 @@ public final class Capturer {
     /// overlay shows the frozen pixels and the user drags on them. The shot is a crop of the
     /// frozen image, so hover states, tooltips and open menus survive the overlay taking the
     /// mouse and focus. Overlay up 50 to 150 ms after the call, result at mouse-up with no
-    /// further capture. App activated (needed for Esc), previous app restored on cancel. A
+    /// further capture. App activated (needed for Space and Shift), previous app restored on cancel. A
     /// second .area call cancels the first and restarts. The selection is clamped to the
     /// display where the drag started.
     /// In .area, a click with no drag takes the window under the pointer instead of a region.
@@ -125,10 +125,24 @@ and reshapes the band the moment it is pressed or released, Space slides the who
 resizing resumes from the moved anchor, a released drag smaller than 2x2 pt falls back to the
 window hovered before the press, and a click with no drag picks that window. `release()` hands
 back only an accepted choice, a region already flipped to CG points or the index of the picked
-window, so a too-small selection has no path out of the seam. Esc, Space and Shift arrive via `keyDown`, `keyUp` and `flagsChanged`.
+window, so a too-small selection has no path out of the seam. Space and Shift arrive via `keyDown`, `keyUp` and `flagsChanged`.
+Esc does not depend on them, see Escape below.
 Mouse moves arrive through an always-active `NSTrackingArea` per panel, since plain mouse-moved
 events reach the key window only. The flip height comes from `NSScreen.screens[0]`, the primary
 display, not `NSScreen.main`, which is the key window's screen.
+
+**Escape (area).** Key events reach the overlay only while the app is active and a panel is
+key. Neither is guaranteed: activating a menu bar app does not always take, and the user or
+another app can move the focus (Cmd+Tab, Spotlight, a notification, a window opening) while
+the overlay still covers every display at `.screenSaver` level. So for as long as the selector
+is up, `Capturer` arms a `CancelKey`. The production adapter `GlobalEscapeKey` registers bare
+Escape as a Carbon hot key (`RegisterEventHotKey`), which is delivered whatever has the focus
+and needs no Accessibility or Input Monitoring grant. Other apps do not see bare Escape while
+it is armed, and it is released on every way out of the selection, except by a selection that
+a newer one replaced. Its handler passes every other hot key on, since the shell's capture
+shortcuts go through the same dispatcher. The panel's `keyDown` still handles Esc with
+modifiers held, or when the registration fails. A cancelled selection re-activates the
+previous app unless a third app took the focus in the meantime.
 
 **Two coordinate spaces.** AppKit is y-up. SCK and `CGWindowListCopyWindowInfo` are y-down from
 the main display's top-left, in points. One conversion: `cgY = mainDisplayHeight - appKitMaxY`.
@@ -161,13 +175,13 @@ preflight true throws `.grantedNeedsRelaunch`, a `UserDefaults` "prompted" flag 
 set the flag, throw `.notDetermined`.
 
 **Cancellation.** The drag is a `CheckedContinuation` inside `withTaskCancellationHandler`.
-Every cancel cause runs one teardown: release overlay windows, restore the previous app,
+Every cancel cause runs one teardown: release overlay windows, restore the previous app unless a third app took the focus,
 resume with `CancellationError` exactly once. The freeze captures are not interruptible, a
 cancel during them drops the images and never opens the overlay.
 
 ## 4. Dependency strategy
 
-Two seams, both internal (`init(backend:selector:)`), with `init()` wiring production.
+Three seams, all internal (`init(backend:selector:cancelKey:)`), with `init()` wiring production.
 
 **Port for SCK and permission** (true external, so a fake adapter is mandatory):
 
@@ -217,6 +231,19 @@ a region the user accepted, so the protocol's single error is `CancellationError
 `ScriptedAreaSelector` returns a preset region or window pick, throws, or suspends, and records what
 it was shown.
 
+**Seam for Escape** (a system-wide key grab, so `Capturer` tests use a fake):
+
+```swift
+protocol CancelKey {
+    func arm(onPress: @escaping () -> Void)
+    func disarm()
+}
+```
+
+`GlobalEscapeKey` is the Carbon hot key above. `FakeCancelKey` records arming and `press()`
+stands in for the user. `GlobalEscapeKeyTests` send hot key events straight to the Carbon
+dispatcher, so no real key is pressed.
+
 **Tests at the interface** (XCTest, `@MainActor`, no screen, no permission):
 
 - area on a 2x display: one full-display capture before the selector, `scale 2`, crop pixels =
@@ -240,6 +267,8 @@ it was shown.
 - full screen captures the display under the pointer, falling back to the first display
 - Esc and Task cancellation each throw `CancellationError`, no overlay left,
   a cancel during the freeze never opens the selector
+- Escape through the `CancelKey` cancels a selection whose selector never sees a key, and
+  the key is armed only while the selector is up
 - second `capture(.area)` during a suspended first one: the first is cancelled, the second runs
 - active window skips layer != 0, alpha 0, tiny and our own windows, passes companions and
   the shadow margin. Nothing eligible throws `.noWindow`

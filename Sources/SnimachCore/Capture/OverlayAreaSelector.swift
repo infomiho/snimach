@@ -225,6 +225,11 @@ final class OverlayAreaSelector: NSObject, AreaSelector {
         }
     }
 
+    private var anotherAppTookFocus: Bool {
+        let frontmost = NSWorkspace.shared.frontmostApplication
+        return frontmost != .current && frontmost != previousApp
+    }
+
     private func teardown() {
         NotificationCenter.default.removeObserver(self)
         if cursorPushed {
@@ -239,7 +244,8 @@ final class OverlayAreaSelector: NSObject, AreaSelector {
         frozen.removeAll()
         pickable.removeAll()
         selection = nil
-        previousApp?.activate()
+        // Escape also ends a selection that lost the focus to another app, which then keeps it.
+        if !anotherAppTookFocus { previousApp?.activate() }
         previousApp = nil
     }
 }
