@@ -2,7 +2,7 @@
 
 Menubar screenshot app for macOS 14+. Two hotkeys, one editor, clipboard first.
 
-- `Sources/SnimachCore` is a plain Swift package with the capture, document and output logic, tested with `swift test`. `App/` is the AppKit shell, an xcodegen project: `cd App && xcodegen generate` writes `Snimach.xcodeproj`, which is gitignored. Test it with `xcodebuild test -project App/Snimach.xcodeproj -scheme Snimach -destination 'platform=macOS' CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=`.
+- `Sources/SnimachCore` is a plain Swift package with the capture, document and output logic, tested with `swift test`. `App/` is the AppKit shell, an xcodegen project with its sources in `App/Sources`: `cd App && xcodegen generate` (xcodegen comes from `mise.toml`) writes `Snimach.xcodeproj`, which is gitignored. Test it with `xcodebuild test -project App/Snimach.xcodeproj -scheme Snimach -destination 'platform=macOS' CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=`.
 - Both suites must be green before a task is done. CI runs the same two commands plus an ad-hoc `scripts/package-app.sh`.
 - `swift` on this Mac needs full Xcode: if `swift test` fails with "Could not initialize build system", run it with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 - Screen Recording grants are keyed to the code signature, so local runs go through `scripts/run.sh`, which signs with the machine's Developer ID and installs to /Applications.
@@ -28,7 +28,7 @@ One-time setup, already done, rerun only on rotation:
 - `TAP_DEPLOY_KEY` is the private half of a write deploy key on the tap repo (`gh repo deploy-key add --allow-write`, then `gh secret set TAP_DEPLOY_KEY`). A local checkout of the tap lives at `~/dev/homebrew-tap`.
 - `COOLIFY_WEBHOOK` and `COOLIFY_TOKEN` point at the `snimach-web` app on Coolify.
 
-Installed copies read `https://github.com/infomiho/snimach/releases/latest/download/appcast.xml` and update themselves through Sparkle, linked as a Swift package (`App/Updater.swift`). Debug builds and ad-hoc packaging runs leave `SUFeedURL` empty, which keeps the updater inert and the Check for Updates item out of the menu.
+Installed copies read `https://github.com/infomiho/snimach/releases/latest/download/appcast.xml` and update themselves through Sparkle, linked as a Swift package (`App/Sources/Updater.swift`). Debug builds and ad-hoc packaging runs leave `SUFeedURL` empty, which keeps the updater inert and the Check for Updates item out of the menu.
 
 ## Web
 

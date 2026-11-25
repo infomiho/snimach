@@ -6,7 +6,7 @@ Add line and text tools, single-object selection for moving and deleting annotat
 
 [Annotations](../Sources/SnimachCore/Document/Annotation.swift) currently cover arrows, numbers, redactions and rectangles. The [document](../Sources/SnimachCore/Document/Document.swift) uses snapshot undo stacks, and [style](../Sources/SnimachCore/Document/Style.swift) defines the brand accent and a four-point width.
 
-The [keymap](../App/EditorKeymap.swift) assigns A, N, R, B, I and K to existing tools. Enter copies and Escape discards. [EditorPanel](../App/EditorWindowController.swift) intercepts key-down events before responders, which matters when introducing native text editing.
+The [keymap](../App/Sources/EditorKeymap.swift) assigns A, N, R, B, I and K to existing tools. Enter copies and Escape discards. [EditorPanel](../App/Sources/EditorWindowController.swift) intercepts key-down events before responders, which matters when introducing native text editing.
 
 ## Comparisons
 
