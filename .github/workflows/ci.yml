@@ -26,7 +26,7 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v7
-      - run: brew install xcodegen
+      - uses: jdx/mise-action@v5
       - run: xcodegen generate --spec App/project.yml
       - run: |
           set -o pipefail

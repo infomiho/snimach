@@ -17,7 +17,7 @@ jobs:
       KEYCHAIN_PATH: ${{ github.workspace }}/release.keychain-db
     steps:
       - uses: actions/checkout@v7
-      - run: brew install xcodegen
+      - uses: jdx/mise-action@v5
       - name: Fetch the annotated tag
         # actions/checkout turns the tag into a lightweight ref on the commit, which
         # loses the message that becomes the release notes.
