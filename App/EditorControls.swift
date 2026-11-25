@@ -3,13 +3,16 @@ import SnimachCore
 
 enum EditorStyle {
     static let inset: CGFloat = 24
-    static let toolbarBottomInset: CGFloat = 32
+    static let toolbarBottomInset: CGFloat = 14
+    static let toolbarGap: CGFloat = 12
     static let controlPadding: CGFloat = 8
     static let controlGap: CGFloat = 1
     static let groupPadding: CGFloat = 8
     static let readoutGap: CGFloat = 12
     static let controlSize = CGSize(width: 34, height: 30)
     static let barHeight: CGFloat = controlSize.height + controlPadding * 2
+    /// The canvas sits above the accessory bar, so the bar never covers the shot.
+    static let canvasBottomInset: CGFloat = toolbarBottomInset + barHeight + toolbarGap
     static let cornerRadius: CGFloat = barHeight / 2
     static let transitionDuration: TimeInterval = 0.24
     static let accent = NSColor(

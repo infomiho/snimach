@@ -33,8 +33,9 @@ Files, one type each:
 - `SettingsView.swift`: SwiftUI sidebar with App, Capture, Shortcuts and About panes. App holds the save folder, LaunchAtLogin and Updates, Capture holds after capture, pointer and preview hiding, Shortcuts holds three `KeyboardShortcuts.Recorder` rows.
 - `Updater.swift`: `SPUStandardUpdaterController` plus its delegate, `nil` when the bundle has no `SUFeedURL`. Publishes `UpdateCheck` (not checked, up to date, available, skipped) for the Updates section and exposes Sparkle's persisted automatic-checks flag. Sparkle's own windows do the rest.
 - `SettingsWindowController.swift`: NSWindow hosting `NSHostingView(rootView: SettingsView())`, owns the activation-policy switch.
-- `EditorLayout.swift`: fits and centers the stage without upscaling. `EditorStageView` overlays
-  the accessory bar and color chip, and transitions backdrop changes inside a fixed window.
+- `EditorLayout.swift`: fits and centers the stage without upscaling, in the area above the
+  accessory bar, so the bar never covers the shot. `EditorStageView` places the accessory bar
+  and color chip, and transitions backdrop changes inside a fixed window.
 - `EditorControls.swift`: native material surface, Solar icon buttons, grouped editing controls,
   a style shelf trigger and an overflow menu that keeps the active tool visible.
 - `AnnotationStyleShelf.swift`: six color swatches with contextual text size and background previews.

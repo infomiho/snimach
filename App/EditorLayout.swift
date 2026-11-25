@@ -15,7 +15,7 @@ struct EditorLayout {
     static func make(contentSize: CGSize, maxContent: CGSize? = nil) -> EditorLayout {
         let natural = CGSize(
             width: max(minimumContentSize.width, contentSize.width + EditorStyle.inset * 2),
-            height: max(minimumContentSize.height, contentSize.height + EditorStyle.inset * 2)
+            height: max(minimumContentSize.height, contentSize.height + EditorStyle.inset + EditorStyle.canvasBottomInset)
         )
         let size = CGSize(width: min(natural.width, maxContent?.width ?? natural.width),
                           height: min(natural.height, maxContent?.height ?? natural.height))
@@ -25,17 +25,24 @@ struct EditorLayout {
 
     static func zoom(for shot: CGSize, in content: CGSize) -> CGFloat {
         guard shot.width > 0, shot.height > 0 else { return 1 }
-        let width = max(1, content.width - EditorStyle.inset * 2)
-        let height = max(1, content.height - EditorStyle.inset * 2)
-        return min(1, width / shot.width, height / shot.height)
+        let area = canvasArea(in: content)
+        return min(1, area.width / shot.width, area.height / shot.height)
     }
 
     static func canvasFrame(for shot: CGSize, in content: CGSize) -> CGRect {
         let scale = zoom(for: shot, in: content)
         let size = CGSize(width: floor(shot.width * scale), height: floor(shot.height * scale))
-        return CGRect(x: ((content.width - size.width) / 2).rounded(),
-                      y: ((content.height - size.height) / 2).rounded(),
+        let area = canvasArea(in: content)
+        return CGRect(x: (area.minX + (area.width - size.width) / 2).rounded(),
+                      y: (area.minY + (area.height - size.height) / 2).rounded(),
                       width: size.width, height: size.height)
+    }
+
+    private static func canvasArea(in content: CGSize) -> CGRect {
+        CGRect(x: EditorStyle.inset,
+               y: EditorStyle.canvasBottomInset,
+               width: max(1, content.width - EditorStyle.inset * 2),
+               height: max(1, content.height - EditorStyle.inset - EditorStyle.canvasBottomInset))
     }
 
     static func clampedFrame(_ frame: CGRect, near shot: CGRect) -> CGRect {

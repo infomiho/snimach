@@ -140,21 +140,28 @@ final class EditorToolbarTests: XCTestCase {
     func testSmallShotIsCenteredWithoutUpscaling() {
         let layout = EditorLayout.make(contentSize: CGSize(width: 200, height: 150))
         XCTAssertEqual(layout.contentSize, EditorLayout.minimumContentSize)
-        XCTAssertEqual(layout.canvasFrame, CGRect(x: 80, y: 65, width: 200, height: 150))
+        XCTAssertEqual(layout.canvasFrame, CGRect(x: 80, y: 89, width: 200, height: 150))
         XCTAssertEqual(layout.zoom, 1)
     }
 
-    func testLargeShotFitsScreenWithEqualInsets() {
+    func testLargeShotFitsScreenAboveToolbar() {
         let layout = EditorLayout.make(contentSize: CGSize(width: 1000, height: 800),
-                                       maxContent: CGSize(width: 548, height: 448))
+                                       maxContent: CGSize(width: 548, height: 496))
         XCTAssertEqual(layout.zoom, 0.5)
-        XCTAssertEqual(layout.canvasFrame, CGRect(x: 24, y: 24, width: 500, height: 400))
+        XCTAssertEqual(layout.canvasFrame, CGRect(x: 24, y: 72, width: 500, height: 400))
     }
 
     func testResizedCanvasFitsAndCenters() {
         let frame = EditorLayout.canvasFrame(for: CGSize(width: 400, height: 200),
                                              in: CGSize(width: 236, height: 236))
-        XCTAssertEqual(frame, CGRect(x: 24, y: 71, width: 188, height: 94))
+        XCTAssertEqual(frame, CGRect(x: 24, y: 95, width: 188, height: 94))
+    }
+
+    func testToolbarNeverCoversCanvas() {
+        let content = CGSize(width: 548, height: 496)
+        let canvas = EditorLayout.canvasFrame(for: CGSize(width: 1000, height: 800), in: content)
+        let barTop = EditorStyle.toolbarBottomInset + EditorStyle.barHeight
+        XCTAssertEqual(canvas.minY - barTop, EditorStyle.toolbarGap)
     }
 
     func testClampedFrameSnapsToWholePoints() {
